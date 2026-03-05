@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RBN Group — Investment Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=Inconsolata:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold: #CFB87C; --gold-dim: #b09a5e; --gold-bg: #faf6ee;
+  --ink: #0a0a0a; --ink-soft: #1e1e1e;
+  --paper: #f7f4ef; --white: #ffffff;
+  --slate: #6b6460; --slate-light: #9c9490;
+  --border: #e0dbd2; --border-strong: #c8c0b4;
+  --green: #2d6a4f; --green-bg: #eaf3ee;
+  --amber: #92400e; --amber-bg: #fef3c7;
+  --red: #9b1c1c; --red-bg: #fde8e8;
+  --blue: #1e3a5f; --blue-bg: #eff6ff;
+  --sidebar-w: 380px;
+  --header-h: 56px;
+  --tabs-h: 40px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(--ink); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+/* ── HEADER ── */
+.header { height: var(--header-h); background: var(--ink); display: flex; align-items: center; justify-content: space-between; padding: 0 1.5rem; border-bottom: 2px solid var(--gold); flex-shrink: 0; }
+.header-left { display: flex; align-items: baseline; gap: 0.6rem; }
+.header-left h1 { font-family: 'DM Serif Display', serif; font-size: 1.3rem; color: var(--gold); letter-spacing: 0.02em; }
+.header-left span { font-size: 0.7rem; color: var(--slate-light); letter-spacing: 0.12em; text-transform: uppercase; }
+.header-right { display: flex; align-items: center; gap: 1rem; }
+.header-date { font-size: 0.72rem; color: var(--slate-light); font-family: 'Inconsolata', monospace; }
+.claude-toggle { background: var(--gold); color: var(--ink); border: none; padding: 0.35rem 0.9rem; font-family: 'DM Sans', sans-serif; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; border-radius: 2px; transition: background 0.2s; }
+.claude-toggle:hover { background: var(--gold-dim); }
+
+/* ── TABS ── */
+.tabs { height: var(--tabs-h); background: var(--ink-soft); display: flex; padding: 0 1.5rem; gap: 0.2rem; align-items: flex-end; flex-shrink: 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.tab-btn { font-family: 'DM Sans', sans-serif; font-size: 0.7rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--slate-light); background: none; border: none; padding: 0.5rem 1rem; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.18s; }
+.tab-btn:hover { color: #ccc; }
+.tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+/* ── MAIN LAYOUT ── */
+.app-body { display: flex; flex: 1; overflow: hidden; }
+.main-area { flex: 1; display: flex; overflow: hidden; }
+.sidebar { flex-shrink: 0; width: 300px; background: var(--white); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+.detail { flex: 1; overflow-y: auto; padding: 1.5rem; background: var(--paper); }
+
+/* ── CLAUDE PANEL ── */
+.claude-panel { width: var(--sidebar-w); flex-shrink: 0; background: var(--ink); border-left: 1px solid rgba(207,184,124,0.3); display: flex; flex-direction: column; overflow: hidden; transition: width 0.25s ease; }
+.claude-panel.hidden { width: 0; overflow: hidden; }
+.claude-header { padding: 1rem 1.2rem 0.8rem; border-bottom: 1px solid rgba(207,184,124,0.2); flex-shrink: 0; }
+.claude-header h3 { font-family: 'DM Serif Display', serif; font-size: 1rem; color: var(--gold); }
+.claude-header p { font-size: 0.68rem; color: var(--slate-light); margin-top: 0.2rem; letter-spacing: 0.03em; }
+.claude-messages { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+.claude-messages::-webkit-scrollbar { width: 4px; }
+.claude-messages::-webkit-scrollbar-track { background: transparent; }
+.claude-messages::-webkit-scrollbar-thumb { background: rgba(207,184,124,0.3); border-radius: 2px; }
+.msg { max-width: 90%; padding: 0.65rem 0.85rem; border-radius: 3px; font-size: 0.8rem; line-height: 1.5; }
+.msg.user { background: rgba(207,184,124,0.15); color: #e8e4dc; border: 1px solid rgba(207,184,124,0.2); align-self: flex-end; }
+.msg.assistant { background: rgba(255,255,255,0.06); color: #c8c4bc; border: 1px solid rgba(255,255,255,0.08); align-self: flex-start; }
+.msg.system { background: transparent; color: var(--slate-light); font-size: 0.7rem; font-style: italic; align-self: center; border: none; padding: 0.2rem; }
+.claude-input-area { padding: 0.85rem; border-top: 1px solid rgba(207,184,124,0.2); flex-shrink: 0; }
+.claude-input-row { display: flex; gap: 0.5rem; align-items: flex-end; }
+.claude-input { flex: 1; background: rgba(255,255,255,0.07); border: 1px solid rgba(207,184,124,0.25); color: #e8e4dc; font-family: 'DM Sans', sans-serif; font-size: 0.8rem; padding: 0.6rem 0.8rem; border-radius: 3px; resize: none; min-height: 38px; max-height: 120px; outline: none; transition: border-color 0.2s; }
+.claude-input:focus { border-color: rgba(207,184,124,0.6); }
+.claude-input::placeholder { color: var(--slate-light); }
+.claude-send { background: var(--gold); color: var(--ink); border: none; width: 36px; height: 36px; border-radius: 2px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.2s; }
+.claude-send:hover { background: var(--gold-dim); }
+.claude-send:disabled { background: #555; cursor: not-allowed; }
+.apply-btn { margin-top: 0.5rem; background: rgba(207,184,124,0.15); border: 1px solid rgba(207,184,124,0.4); color: var(--gold); font-family: 'DM Sans', sans-serif; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.4rem 0.8rem; border-radius: 2px; cursor: pointer; width: 100%; transition: background 0.2s; }
+.apply-btn:hover { background: rgba(207,184,124,0.25); }
+
+/* ── SIDEBAR LIST ── */
+.sidebar-header { padding: 1rem; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.sidebar-header h2 { font-family: 'DM Serif Display', serif; font-size: 1.05rem; color: var(--ink); }
+.stats-bar { display: flex; gap: 0; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.stat-item { flex: 1; padding: 0.6rem 0.4rem; text-align: center; cursor: pointer; transition: background 0.15s; border-right: 1px solid var(--border); }
+.stat-item:last-child { border-right: none; }
+.stat-item:hover { background: var(--gold-bg); }
+.stat-item.active-filter { background: var(--gold-bg); border-bottom: 2px solid var(--gold); }
+.stat-num { font-family: 'Inconsolata', monospace; font-size: 1.1rem; font-weight: 500; color: var(--ink); display: block; }
+.stat-lbl { font-size: 0.55rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--slate); display: block; margin-top: 0.1rem; }
+.deal-list { flex: 1; overflow-y: auto; }
+.deal-item { padding: 0.85rem 1rem; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.12s; }
+.deal-item:hover { background: var(--gold-bg); }
+.deal-item.selected { background: var(--gold-bg); border-left: 3px solid var(--gold); }
+.deal-name { font-weight: 600; font-size: 0.85rem; color: var(--ink); }
+.deal-meta { font-size: 0.72rem; color: var(--slate); margin-top: 0.2rem; }
+.deal-price { font-family: 'Inconsolata', monospace; font-size: 0.78rem; color: var(--ink); font-weight: 500; }
+
+/* ── BADGES ── */
+.badge { display: inline-block; padding: 0.18rem 0.55rem; border-radius: 2px; font-size: 0.62rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+.badge-loi { background: var(--blue-bg); color: var(--blue); }
+.badge-uc { background: var(--amber-bg); color: var(--amber); }
+.badge-closed { background: var(--green-bg); color: var(--green); }
+.badge-passed { background: #f3f3f3; color: #888; }
+.badge-prospect { background: #f0f0ff; color: #5050c0; }
+.badge-active { background: var(--green-bg); color: var(--green); }
+.badge-watch { background: var(--amber-bg); color: var(--amber); }
+
+/* ── DETAIL PANEL ── */
+.detail-empty { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--slate-light); font-size: 0.85rem; font-style: italic; }
+.deal-detail { max-width: 860px; }
+.detail-title-row { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.25rem; gap: 1rem; }
+.detail-name { font-family: 'DM Serif Display', serif; font-size: 1.8rem; color: var(--ink); line-height: 1.1; }
+.detail-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
+.btn { font-family: 'DM Sans', sans-serif; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.4rem 0.85rem; border-radius: 2px; cursor: pointer; border: 1px solid; transition: all 0.15s; }
+.btn-outline { background: transparent; border-color: var(--border-strong); color: var(--slate); }
+.btn-outline:hover { background: var(--border); }
+.btn-gold { background: var(--gold); border-color: var(--gold); color: var(--ink); }
+.btn-gold:hover { background: var(--gold-dim); border-color: var(--gold-dim); }
+.btn-danger { background: transparent; border-color: #dc2626; color: #dc2626; }
+.btn-danger:hover { background: var(--red-bg); }
+.btn-green { background: var(--green); border-color: var(--green); color: white; }
+.btn-green:hover { background: #1d4d38; }
+
+/* ── FIELDS GRID ── */
+.fields-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.6rem; margin-bottom: 1.25rem; }
+.field-card { background: var(--white); border: 1px solid var(--border); padding: 0.75rem; border-radius: 3px; }
+.field-label { font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--slate); margin-bottom: 0.35rem; }
+.field-value { font-size: 0.88rem; color: var(--ink); font-weight: 500; }
+.field-value.mono { font-family: 'Inconsolata', monospace; }
+.field-input { width: 100%; border: none; outline: none; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; color: var(--ink); font-weight: 500; background: transparent; }
+.field-card:focus-within { border-color: var(--gold); background: var(--gold-bg); }
+
+/* ── INNER TABS ── */
+.inner-tabs { display: flex; gap: 0; border-bottom: 2px solid var(--border); margin-bottom: 1.1rem; }
+.inner-tab-btn { font-family: 'DM Sans', sans-serif; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--slate); background: none; border: none; cursor: pointer; padding: 0.55rem 1rem; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.15s; }
+.inner-tab-btn:hover { color: var(--ink); }
+.inner-tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
+.inner-tab-panel { display: none; }
+.inner-tab-panel.active { display: block; }
+
+/* ── PROPERTY INFO PANEL ── */
+.info-section { margin-bottom: 1.1rem; }
+.info-section-title { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; margin-bottom: 0.65rem; }
+.info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 0.5rem; }
+.info-field { background: var(--white); border: 1px solid var(--border); border-radius: 3px; padding: 0.55rem 0.75rem; }
+.info-label { font-size: 0.62rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--slate); margin-bottom: 0.25rem; }
+.info-value { font-size: 0.84rem; color: var(--ink); line-height: 1.45; }
+
+/* ── UPDATE LOG ── */
+.update-log { list-style: none; margin-bottom: 0.75rem; }
+.update-item { padding: 0.6rem 0.75rem; border-radius: 3px; margin-bottom: 0.45rem; background: var(--white); border: 1px solid var(--border); border-left: 3px solid var(--border); display: grid; grid-template-columns: auto 1fr auto; gap: 0.4rem 0.7rem; align-items: start; }
+.update-meta { display: flex; flex-direction: column; gap: 0.2rem; min-width: 72px; }
+.update-date { font-family: 'Inconsolata', monospace; font-size: 0.68rem; color: var(--slate); white-space: nowrap; }
+.update-cat { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 0.12rem 0.4rem; border-radius: 2px; white-space: nowrap; text-align: center; }
+.cat-leasing    { background: #e3f2fd; color: #1565c0; } .update-item.cat-leasing    { border-left-color: #1565c0; }
+.cat-construction { background: #fff3e0; color: #e65100; } .update-item.cat-construction { border-left-color: #e65100; }
+.cat-closing    { background: #f3e5f5; color: #6a1b9a; } .update-item.cat-closing    { border-left-color: #6a1b9a; }
+.cat-finance    { background: var(--green-bg); color: var(--green); } .update-item.cat-finance    { border-left-color: var(--green); }
+.cat-general    { background: #f0f0f0; color: #666; }    .update-item.cat-general    { border-left-color: #aaa; }
+.cat-pm         { background: #fce4ec; color: #c62828; } .update-item.cat-pm         { border-left-color: #c62828; }
+.update-text { font-size: 0.84rem; color: var(--ink); line-height: 1.5; padding-top: 0.05rem; }
+.update-del { background: none; border: none; cursor: pointer; color: var(--slate-light); font-size: 0.85rem; padding: 0; transition: color 0.15s; }
+.update-del:hover { color: var(--red); }
+.add-update-row { display: flex; gap: 0.45rem; flex-wrap: wrap; align-items: center; }
+.add-update-row input[type=text] { flex: 1; min-width: 160px; font-family: 'DM Sans', sans-serif; font-size: 0.82rem; padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: 2px; outline: none; background: var(--white); }
+.add-update-row input[type=text]:focus { border-color: var(--gold); }
+.add-update-row select, .cat-select { font-family: 'DM Sans', sans-serif; font-size: 0.72rem; font-weight: 600; padding: 0.38rem 0.5rem; border: 1px solid var(--border); border-radius: 2px; outline: none; background: var(--white); color: var(--ink); cursor: pointer; }
+.add-update-row select:focus { border-color: var(--gold); }
+
+/* ── NOTES (legacy compat) ── */
+.section-title { font-family: 'DM Serif Display', serif; font-size: 1rem; color: var(--ink); margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between; }
+
+/* ── TASKS ── */
+.tasks-list { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1.25rem; }
+.task-item { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.5rem 0.75rem; background: var(--white); border: 1px solid var(--border); border-radius: 3px; }
+.task-item.done-task { opacity: 0.55; }
+.task-cal { background: none; border: none; cursor: pointer; font-size: 0.85rem; opacity: 0; transition: opacity 0.15s; padding: 0 2px; color: var(--slate); flex-shrink: 0; }
+.task-cal:hover { color: var(--gold); }
+.task-cal.cal-adding { animation: calSpin 0.8s linear infinite; }
+.task-cal.cal-done { color: #2d6a4f; opacity: 1 !important; }
+@keyframes calSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.task-item:hover .task-cal { opacity: 1; }
+.task-check { width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; cursor: pointer; accent-color: var(--green); }
+.task-text { font-size: 0.82rem; flex: 1; line-height: 1.4; }
+.task-text.done { text-decoration: line-through; color: var(--slate); }
+.task-text[contenteditable="true"] { outline: none; border-bottom: 1px dashed var(--gold); }
+.task-del { background: none; border: none; color: #ddd; cursor: pointer; font-size: 0.85rem; opacity: 0; transition: opacity 0.15s; }
+.task-item:hover .task-del { opacity: 1; }
+.task-del:hover { color: var(--red); }
+.add-task-row { display: flex; gap: 0.5rem; }
+.add-task-input { flex: 1; border: 1px solid var(--border); border-radius: 2px; padding: 0.45rem 0.65rem; font-family: 'DM Sans', sans-serif; font-size: 0.8rem; outline: none; }
+.add-task-input:focus { border-color: var(--gold); }
+
+/* ── ASSETS ── */
+.asset-list { display: flex; flex-direction: column; gap: 0; }
+.asset-item { padding: 0.85rem 1rem; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.12s; }
+.asset-item:hover { background: var(--gold-bg); }
+.asset-item.selected { background: var(--gold-bg); border-left: 3px solid var(--gold); }
+
+/* ── MODAL for new deal ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+.modal-overlay.hidden { display: none; }
+.modal { background: var(--white); border-radius: 4px; padding: 1.5rem; width: 520px; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+.modal h3 { font-family: 'DM Serif Display', serif; font-size: 1.3rem; margin-bottom: 1rem; }
+.modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem; }
+.form-group { display: flex; flex-direction: column; gap: 0.3rem; }
+.form-group.full { grid-column: 1 / -1; }
+.form-group label { font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--slate); }
+.form-group input, .form-group select, .form-group textarea { border: 1px solid var(--border); border-radius: 2px; padding: 0.45rem 0.6rem; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; outline: none; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--gold); }
+.modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
+
+/* ── STAGE SELECT ── */
+.stage-select { font-family: 'DM Sans', sans-serif; font-size: 0.75rem; font-weight: 600; border: 1px solid var(--border); border-radius: 2px; padding: 0.3rem 0.5rem; background: white; cursor: pointer; }
+
+/* ── SCROLLBAR ── */
+.deal-list::-webkit-scrollbar, .detail::-webkit-scrollbar, .asset-list::-webkit-scrollbar { width: 5px; }
+.deal-list::-webkit-scrollbar-track, .detail::-webkit-scrollbar-track, .asset-list::-webkit-scrollbar-track { background: transparent; }
+.deal-list::-webkit-scrollbar-thumb, .detail::-webkit-scrollbar-thumb, .asset-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.deal-list::-webkit-scrollbar-thumb:hover, .detail::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
+
+/* ── DIVIDER ── */
+.section-divider { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+
+/* ── THINKING indicator ── */
+.thinking { display: flex; gap: 4px; align-items: center; padding: 0.5rem; }
+.thinking span { width: 6px; height: 6px; background: var(--gold); border-radius: 50%; animation: pulse 1.2s infinite; }
+.thinking span:nth-child(2) { animation-delay: 0.2s; }
+.thinking span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes pulse { 0%,80%,100%{opacity:0.3;transform:scale(0.8)} 40%{opacity:1;transform:scale(1)} }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>RBN Group</h1>
+    <span>Mitch Veremeychik — Investment Tracker</span>
+  </div>
+  <div class="header-right">
+    <span class="header-date" id="headerDate"></span>
+    <button class="claude-toggle" onclick="toggleClaude()">✦ Ask Claude</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('acq',this)">Acquisitions</button>
+  <button class="tab-btn" onclick="switchTab('assets',this)">Asset Management</button>
+</div>
+
+<div class="app-body">
+  <div class="main-area" id="mainArea">
+
+    <!-- ACQUISITIONS VIEW -->
+    <div id="acqView" class="main-area" style="flex:1;overflow:hidden;">
+      <div class="sidebar" id="acqSidebar">
+        <div class="sidebar-header" style="display:flex;align-items:center;justify-content:space-between;">
+          <h2>Pipeline</h2>
+          <button class="btn btn-gold" onclick="showNewDealModal()" style="font-size:0.68rem;padding:0.3rem 0.7rem;">+ New</button>
+        </div>
+        <div class="stats-bar" id="statsBar"></div>
+        <div class="deal-list" id="dealList"></div>
+      </div>
+      <div class="detail" id="acqDetail">
+        <div class="detail-empty">Select a deal to view details</div>
+      </div>
+    </div>
+
+    <!-- ASSETS VIEW -->
+    <div id="assetsView" class="main-area" style="flex:1;overflow:hidden;display:none;">
+      <div class="sidebar" id="assetSidebar">
+        <div class="sidebar-header" style="display:flex;align-items:center;justify-content:space-between;">
+          <h2>Portfolio</h2>
+          <button class="btn btn-gold" onclick="showNewAssetModal()" style="font-size:0.68rem;padding:0.3rem 0.7rem;">+ New</button>
+        </div>
+        <div class="asset-list" id="assetList"></div>
+      </div>
+      <div class="detail" id="assetDetail">
+        <div class="detail-empty">Select a property to view details</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CLAUDE PANEL -->
+  <div class="claude-panel hidden" id="claudePanel">
+    <div class="claude-header">
+      <h3>✦ Claude</h3>
+      <p>Ask me to update deals, add notes, change stages, or anything else.</p>
+    </div>
+    <div class="claude-messages" id="claudeMessages">
+      <div class="msg system">Ready. Try "move Sheridan Center to Passed" or "add a note to Lincoln St about the DaVita renewal".</div>
+    </div>
+    <div class="claude-input-area">
+      <div class="claude-input-row">
+        <textarea class="claude-input" id="claudeInput" placeholder="Ask Claude to update your tracker..." rows="1" onkeydown="handleClaudeKey(event)"></textarea>
+        <button class="claude-send" id="claudeSend" onclick="sendToClaude()">↑</button>
+      </div>
+      <div id="applyArea"></div>
+    </div>
+  </div>
+</div>
+
+<!-- NEW DEAL MODAL -->
+<div class="modal-overlay hidden" id="newDealModal">
+  <div class="modal">
+    <h3>New Deal</h3>
+    <div class="modal-grid">
+      <div class="form-group full"><label>Property Name</label><input id="nd-name" placeholder="e.g. Westwind Marketplace"></div>
+      <div class="form-group"><label>Market</label><input id="nd-market" placeholder="Denver, CO"></div>
+      <div class="form-group"><label>Property Type</label><input id="nd-type" placeholder="Retail, IOS, Office…"></div>
+      <div class="form-group"><label>Stage</label>
+        <select id="nd-stage">
+          <option>Prospecting</option><option selected>LOI</option><option>Under Contract</option><option>Closed</option><option>Passed</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Purchase Price</label><input id="nd-price" placeholder="$0,000,000"></div>
+      <div class="form-group"><label>Size</label><input id="nd-size" placeholder="10,000 SF / 1.5 AC"></div>
+      <div class="form-group"><label>Cap Rate</label><input id="nd-cap" placeholder="7.5%"></div>
+      <div class="form-group"><label>Target Close</label><input id="nd-close" placeholder="Q2 2026"></div>
+      <div class="form-group full"><label>Broker</label><input id="nd-broker" placeholder="Name, firm, contact"></div>
+      <div class="form-group full"><label>Entity</label><input id="nd-entity" placeholder="WP Lincoln LLC"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('newDealModal')">Cancel</button>
+      <button class="btn btn-gold" onclick="createNewDeal()">Create Deal</button>
+    </div>
+  </div>
+</div>
+
+<!-- NEW ASSET MODAL -->
+<div class="modal-overlay hidden" id="newAssetModal">
+  <div class="modal">
+    <h3>New Asset</h3>
+    <div class="modal-grid">
+      <div class="form-group full"><label>Property Name</label><input id="na-name" placeholder="e.g. Sheridan Center"></div>
+      <div class="form-group"><label>Address</label><input id="na-addr" placeholder="123 Main St, City, CO"></div>
+      <div class="form-group"><label>Type</label><input id="na-type" placeholder="Retail, Industrial…"></div>
+      <div class="form-group"><label>Purchase Price</label><input id="na-price" placeholder="$0,000,000"></div>
+      <div class="form-group"><label>Size</label><input id="na-size" placeholder="10,000 SF"></div>
+      <div class="form-group"><label>Close Date</label><input id="na-closed" placeholder="Jan 27, 2026"></div>
+      <div class="form-group"><label>Lender</label><input id="na-lender" placeholder="First Bank"></div>
+      <div class="form-group"><label>Property Manager</label><input id="na-pm" placeholder="PM Company"></div>
+      <div class="form-group"><label>Cap Rate</label><input id="na-cap" placeholder="7.5%"></div>
+      <div class="form-group"><label>NOI</label><input id="na-noi" placeholder="$150,000"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('newAssetModal')">Cancel</button>
+      <button class="btn btn-gold" onclick="createNewAsset()">Add Asset</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let state = {
+  deals: [
+    {
+      id: 1772743830161,
+      name: "Quebec Village", market: "Denver, CO", type: "Retail / Multi-Tenant",
+      stage: "Prospecting", price: "$25,000,000", psf: "$198/SF", cap: "6.5% current / 12.0% pro forma", size: "126,026 SF · 12.09 AC",
+      broker: "Sophie Eck (Kensington)", entity: "", targetClose: "", lender: "",
+      notes: [
+        { date: "Mar 5", cat: "general", text: "8181-8271 Quebec St, Denver CO 80249. 5-building retail center built 1988." },
+        { date: "Mar 5", cat: "leasing", text: "63% occupied (79,833 SF leased / 46,193 SF vacant). Anchor: Amazon Retail (43,000 SF, lease exp 11/2037). WALT: 9.5 years." },
+        { date: "Mar 5", cat: "finance", text: "Ask $25M ($198/SF). Current NOI: ~$1.63M (6.5% cap). Pro forma NOI: ~$3.0M (12.0% cap) at stabilization." },
+        { date: "Mar 5", cat: "general", text: "Currently owned by IMKD7 LLC / Centennial 1031 LLC. Last sold 3/24/2021 for $20.8M." },
+        { date: "Mar 5", cat: "general", text: "Contact: Sophie Eck at Kensington." }
+      ],
+      tasks: [
+        { text: "Follow up with Sophie Eck (Kensington) on pricing / deal status", done: false, id: 10.1 },
+        { text: "Review rent roll — GNC lease expires 7/31/2026 (rollover risk)", done: false, id: 10.2 },
+        { text: "Evaluate leasing plan for 46,193 SF vacancy (36.7%)", done: false, id: 10.3 }
+      ],
+      open: true
+    },
+    {
+      id: 1741200000004,
+      name: "Woodland Park Plaza", market: "Woodland Park, CO", type: "Retail / Strip Center",
+      stage: "Closed", price: "$3,500,000", psf: "", cap: "", size: "23,791 SF",
+      broker: "", entity: "WP Park Ave LLC & WP Park Ave 2 LLC (TIC)", targetClose: "Feb 10, 2026", lender: "",
+      notes: [{ date: "Feb 10, 2026", cat: "general", text: "Closed 2/10/2026. $3,500,000. 23,791 SF retail center in Woodland Park CO. TIC: WP Park Ave LLC (Aviv Rubin) & WP Park Ave 2 LLC (Cory Gross)." }],
+      tasks: [], open: true
+    },
+    {
+      id: 1741200000005,
+      name: "3247 S Lincoln St", market: "Englewood, CO", type: "Medical",
+      stage: "Closed", price: "$1,775,000", psf: "$198.10", cap: "9.68% (yield on cost)", size: "8,960 SF",
+      broker: "John Fairbairn (Fairbairn Commercial)", entity: "WP Lincoln LLC (Aviv Rubin, Manager)", targetClose: "Jan 27, 2026", lender: "First Bank",
+      notes: [
+        { date: "Jan 27, 2026", cat: "general", text: "Closed 1/27/2026 at $1,775,000. Entity: WP Lincoln LLC (Aviv Rubin, Manager). Single LLC acquisition. Lender: First Bank (Acquisition + Future Funding). No 2025 cost seg." },
+        { date: "Jan 27, 2026", cat: "finance", text: "Total basis: $2,128,402 ($237.54/SF). Breakdown: Purchase $1,775,000 | Acq fee $40,000 | CapEx $100,000 | LC $12,840 | Financing fees $15,563 | Closing costs $20,000 | TI/Reserves $165,000. Loan: $1,556,250. Equity: $572,152." },
+        { date: "Jan 27, 2026", cat: "finance", text: "LP investors: Janet S. Lepp & Philip T. Lones $100K (16.3%) | Stevens Family Trust $375K (61.0%) | NDTCO/John Fairbairn IRA $100K (16.3%) | Aviv Rubin $40K (6.5%). LP total: $615,000. LP receives 10% preferred return + 25% of net profit above pref. Projected LP multiple: 1.49x (renewal) / 1.34x (as-is)." },
+        { date: "Jan 27, 2026", cat: "finance", text: "Current NOI: $128,756 ($14.37/SF). Pro-forma NOI (renewal): $206,080 ($23/SF). Yield on cost: 9.68%. Exit cap: 6.5% → stabilized value ~$3,170,000. TI/LC holdback from First Bank: $300,000." },
+        { date: "Jan 27, 2026", cat: "legal", text: "DaVita (Total Renal Care, Inc.) — 6,727 RSF (BOMA per Sixth Amendment, eff. 2/1/2024). Lease expires 1/31/2029. 2 renewal options × 5 years — must exercise 180 days prior (deadline ~8/5/2028). Rent based on 6,500 SF during extended term; reverts to 6,727 SF upon renewal. CAM cap: 3% over 5-yr avg on Controllable OpEx." },
+        { date: "Jan 27, 2026", cat: "finance", text: "DaVita rent schedule: Feb 2024–Jan 2025: $22.67/SF ($12,279.58/mo) | Feb 2025–Jan 2026: $23.01/SF ($12,463.75/mo) | Feb 2026–Jan 2027: $23.36/SF ($12,653.33/mo) | Feb 2027–Jan 2028: $23.71/SF ($12,842.92/mo) | Feb 2028–Jan 2029: $24.07/SF ($13,037.92/mo)." },
+        { date: "Jan 27, 2026", cat: "ops", text: "Vacancy: 2,233 SF — marketing at $25/SF NNN. TI/LC holdback: $300,000 available from First Bank. Operating funds: $24,244.86 wired from Stewart to WP Lincoln LLC + $257 to deposit." }
+      ],
+      tasks: [
+        { text: "Calendar DaVita renewal notice deadline — 180 days prior to 1/31/2029 = by 8/5/2028", done: false, id: 5.1 },
+        { text: "Confirm TI/LC holdback draw process with First Bank ($300,000 available)", done: false, id: 5.2 },
+        { text: "Confirm operating funds deposited to PM account ($24,244.86 + $257)", done: false, id: 5.3 },
+        { text: "Market 2,233 SF vacancy at $25/SF NNN", done: false, id: 5.4 },
+        { text: "Pursue DaVita blend & extend conversation", done: false, id: 5.5 }
+      ], open: true
+    },
+    {
+      id: 1741200000006,
+      name: "4801 Larkmoore Ct", market: "Charlotte, NC", type: "IOS",
+      stage: "Closed", price: "$3,100,000", psf: "", cap: "", size: "25,312 SF",
+      broker: "Ryan Kendall & Abby Rights (Avison Young)", entity: "RBN Larkmoore LLC & NB Larkmoore LLC (TIC)", targetClose: "Dec 30, 2025", lender: "SouthState Bank",
+      notes: [
+        { date: "Dec 30, 2025", cat: "general", text: "Closed 12/30/2025. $3,100,000. 25,312 SF industrial/flex in Charlotte NC. TIC: RBN Larkmoore LLC & NB Larkmoore LLC." },
+        { date: "Feb 19", cat: "ops", text: "Move-in demo & work completed 2/19–2/24. ✓" },
+        { date: "Feb 14", cat: "ops", text: "Clarify with Curt Russ — loading dock & asphalt paving deferred. ✓" }
+      ],
+      tasks: [
+        { text: "Confirm loading dock & asphalt paving scope with Curt Russ", done: false, id: 6.1 },
+        { text: "Confirm lender and PM details", done: false, id: 6.2 }
+      ],
+      open: true
+    },
+    {
+      id: 1741200000013,
+      name: "Plaza at Chapel Hills", market: "Colorado Springs, CO", type: "Retail / Shopping Center",
+      stage: "LOI", price: "$12,500,000", psf: "$186.13", cap: "", size: "67,159 SF / 4.95 AC (3 buildings)",
+      broker: "Jon Hendrickson (Cushman & Wakefield) — Buyer's broker, separate commission agreement",
+      entity: "RBN Group, LLC and/or assigns", targetClose: "~50 days from contract execution (30-day inspection + 20 days to close)",
+      notes: [
+        { date: "Jan 21, 2026", cat: "general", text: "LOI submitted 1/21/2026. Purchase price: $12,500,000. Seller: Higley WG LLC (Bruce Galloway, Evergreen Investment Co.). Buyer broker: Jon Hendrickson, C&W." }
+      ],
+      tasks: [],
+      open: true
+    },
+    {
+      id: 1741200000014,
+      name: "1775-1831 E 69th Ave", market: "Denver, CO", type: "IOS",
+      stage: "LOI", price: "$4,100,000", psf: "$260.37", cap: "", size: "15,745 SF buildings / 5.32 AC",
+      broker: "Craig Myles & RC Myles (Pinnacle Real Estate Advisors) — Seller's broker. One Broadway Suite A300, Denver CO 80203",
+      entity: "RBN Group, LLC and/or assigns", targetClose: "~60 days from contract execution (40-day inspection + 20 days to close)",
+      notes: [
+        { date: "Jan 22, 2026", cat: "general", text: "LOI submitted 1/22/2026. Purchase price: $4,100,000. Seller: TIMA LLC. Seller broker: Craig & RC Myles, Pinnacle Real Estate Advisors." }
+      ],
+      tasks: [],
+      open: true
+    },
+    {
+      id: 1741200000011,
+      name: "Sheridan Center", market: "Lakewood, CO", type: "Retail / Shopping Center",
+      stage: "LOI", price: "$3,600,000", psf: "$138.49", cap: "", size: "25,994 SF / 2.58 AC",
+      broker: "No broker — direct deal",
+      entity: "RBN Group, LLC and/or assigns", targetClose: "~60 days from contract execution",
+      notes: [
+        { date: "Feb 12, 2026", cat: "general", text: "LOI submitted 2/12/2026. Purchase price: $3,600,000. Seller: Southwestern Investments LLC (Brian Younessi). No broker." }
+      ],
+      tasks: [],
+      open: true
+    },
+    {
+      id: 1741200000012,
+      name: "Union Gap Shoppette", market: "Colorado Springs, CO", type: "Retail / Shopping Center",
+      stage: "LOI", price: "$2,450,000", psf: "$153.03", cap: "", size: "16,010 SF / 1.47 AC",
+      broker: "No broker — direct deal",
+      entity: "RBN Group, LLC and/or assigns", targetClose: "~60 days from contract execution",
+      notes: [
+        { date: "Feb 6, 2026", cat: "general", text: "LOI submitted 2/6/2026. Purchase price: $2,450,000. Seller: Bachara Enterprises LLC (Ted Bachara). No broker." }
+      ],
+      tasks: [],
+      open: true
+    },
+    {
+      id: 1741200000010,
+      name: "6015 W 56th Ave", market: "Arvada, CO", type: "IOS",
+      stage: "LOI", price: "$4,200,000", psf: "", cap: "", size: "~3.99 AC (130,680 SF + 44,257 SF lots)",
+      broker: "Tanner Digby (Digby Commercial Advisors) — 720-843-1330 | tanner@digbycommercial.com",
+      leasingBroker: "",
+      lender: "All-cash — no loan",
+      entity: "RBN Group, LLC and/or assigns", targetClose: "~May 3, 2026 (60 days from MEC 3/4/26)",
+      notes: [
+        { date: "Mar 4, 2026", cat: "general", text: "Purchase contract executed 3/4/2026 (CBS3-6-24). MEC: 3/4/2026. Buyer: RBN Group LLC and/or Assigns. Seller: Alpha Industrial LLLP. Jefferson County. Two lots: 130,680 SF + 44,257 SF = ~3.99 AC total. Acceptance deadline: 3/11/2026." },
+        { date: "Mar 4, 2026", cat: "finance", text: "Purchase price: $4,200,000. All-cash transaction. Earnest money: $40,000 (Stewart Title Guarantee Company). Cash at closing: $4,160,000. Buyer broker commission: 4% of purchase price paid by Seller." },
+        { date: "Mar 4, 2026", cat: "legal", text: "Key deadlines from MEC 3/4/2026: Seller disclosure 3/9. Record title + DD documents delivery 3/14. Appraisal + ALTA Survey 4/3. Inspection termination 4/18. Environmental termination 4/18. DD objection 4/18. Estoppels 4/18. Title resolution 4/23. Closing ~5/3/2026." },
+        { date: "Mar 4, 2026", cat: "legal", text: "Title: Special warranty deed. OEC required — Buyer pays premium. ALTA Survey required — Buyer orders & pays. Possession at closing. Late delivery penalty: $300/day. Contract assignable to entity controlled by Buyer without Seller consent. Seller shall not enter new leases or amend existing leases without Buyer written consent after MEC." }
+      ],
+      tasks: [
+        { text: "Confirm Seller countersignature / acceptance by 3/11/2026", done: false, id: 10.01 },
+        { text: "Deposit $40,000 earnest money with Stewart Title Guarantee Company", done: false, id: 10.02 },
+        { text: "Seller disclosure due by 3/9/2026 (5 days from MEC)", done: false, id: 10.03 },
+        { text: "Request DD documents from Seller — due 3/14/2026 (10 days from MEC)", done: false, id: 10.04 },
+        { text: "Order ALTA Survey (Buyer pays) — deadline 4/3/2026 (30 days from MEC)", done: false, id: 10.05 },
+        { text: "Order Appraisal (Buyer pays) — deadline 4/3/2026 (30 days from MEC)", done: false, id: 10.06 },
+        { text: "Complete Phase I Environmental — termination deadline 4/18/2026", done: false, id: 10.07 },
+        { text: "Physical inspection — termination deadline 4/18/2026", done: false, id: 10.08 },
+        { text: "Review DD documents — objection deadline 4/18/2026", done: false, id: 10.09 },
+        { text: "Estoppel statements from all tenants — deadline 4/18/2026", done: false, id: 10.10 },
+        { text: "Entity formation for acquisition", done: false, id: 10.11 },
+        { text: "Confirm insurance binding coverage", done: false, id: 10.12 },
+        { text: "Title review — record title objection deadline 4/18/2026", done: false, id: 10.13 },
+        { text: "Coordinate closing with Stewart Title — target ~5/3/2026", done: false, id: 10.14 }
+      ],
+      open: true
+    },
+    {
+      id: 1741200000000,
+      name: "1770 E 69th Ave", market: "Denver, CO", type: "IOS",
+      stage: "Under Contract", price: "$1,950,000", psf: "$150.12", cap: "", size: "12,989 SF / 2.05 AC (Bldg A: 7,039 SF | Bldg B: 3,250 SF | Bldg C: 2,700 SF)",
+      broker: "John Onstott & Randy Dowis (NAI Highland) — Acquisition Broker",
+      leasingBroker: "Matthew Marcus & Kristjan Danis (Senior Brokers, Colliers) | matthew.marcus@colliers.com +1 720 833 4639 | kristjan.danis@colliers.com +1 303 283 1379 | Alexandra Novo (Transaction Manager) alexandra.novo@colliers.com +1 305 215 2657",
+      lender: "SouthState Bank",
+      entity: "RBN Group, LLC and/or assigns", targetClose: "Mar 13, 2026",
+      notes: [
+        { date: "Mar 1", cat: "general", text: "Extension requested from Mar 13 to Mar 20, 2026. Awaiting Seller confirmation." },
+        { date: "Mar 5, 2026", cat: "ops", text: "Leasing: Matthew Marcus & Kristjan Danis (Senior Brokers, Colliers) | Alexandra Novo (Transaction Manager). 12,989 SF / 2.05 AC. I-2 zoning (Adams County). YOC: 1986. Loading: 2 dock highs, 14 drive-ins. Clear height: 10ft2in-21ft. Bldg A (7,039 SF): ~2,000 SF office, 2 drive-ins, 2 dock highs, clearspan, clear ht 10ft2in-21ft. Bldg B (3,250 SF): 3 drive-ins, clearspan, clear ht 13ft2in-14ft5in. Bldg C (2,700 SF): 9 drive-ins, no clearspan, clear ht 12ft-16ft. Access to I-70, I-270, I-76. Lease rate: contact brokers." },
+        { date: "Feb 28", cat: "finance", text: "SouthState Bank engaged as lender. Vacant IOS/land play — no income at acquisition." },
+        { date: "Feb 10", cat: "legal", text: "Under contract. Hard deadline approaching. Ensure all contingencies addressed before extension." }
+      ],
+      tasks: [
+        { text: "Confirm Mar 20 extension with Seller", done: false, id: 0.1 },
+        { text: "Finalize SouthState Bank loan terms", done: false, id: 0.2 },
+        { text: "Complete Phase I Environmental", done: false, id: 0.3 },
+        { text: "Title review and clear all exceptions", done: false, id: 0.4 },
+        { text: "ALTA survey ordered and reviewed", done: false, id: 0.5 },
+        { text: "Entity formation for acquisition", done: false, id: 0.6 },
+        { text: "Confirm insurance binding", done: false, id: 0.7 }
+      ],
+      open: true
+    },
+    {
+      id: 1741200000001,
+      name: "Westwind Marketplace", market: "Colorado Springs, CO", type: "Retail / Shopping Center",
+      stage: "Under Contract", price: "$5,050,000", psf: "$193.67", cap: "7.91% (going-in)", size: "26,075 SF / 2.59 AC",
+      broker: "Patrick Kerscher — Cushman & Wakefield | Direct: 719.418.4065 | 90 S Cascade Ave Ste 1150, Colorado Springs CO 80903",
+      leasingBroker: "Patrick Kerscher — Cushman & Wakefield | Direct: 719.418.4065 | Office: 719.634.1500",
+      lender: "First Bank (Acquisition + Future Funding)",
+      entity: "RBN Centennial LLC & AR Pecan LLC (TIC)", targetClose: "Mar 19, 2026 (hard deadline Mar 31)",
+      notes: [
+        { date: "Mar 5, 2026", cat: "general", text: "4325-4435 Centennial Blvd, Colorado Springs, CO 80907. 3 parcels: North Parcel (4425 Centennial — 12,000 SF imp / 70,567 SF land, YOC 1996), South Parcel (4325 Centennial — 12,135 SF imp / 26,148 SF land, YOC 1996), Verizon Pad (4319 Centennial — 2,400 SF imp / 16,123 SF land, YOC 1998). Total land: 112,838 SF (2.59 AC). Seller: Neuenschwander Enterprises LLC (owned since July 2004). Shadow anchored by Safeway." },
+        { date: "Mar 5, 2026", cat: "finance", text: "Purchase price: $5,050,000 ($193.67/SF). Total basis: $5,656,584 ($216.94/SF). Loan: First Bank $4,242,438 (75% LTC) — Acquisition + Future Funding. Equity: $1,414,146 (25%). TI/LC/CapEx holdback: $300,000. CapEx budget: $200,000. LC budget: $42,660. Acq fee: $151,500." },
+        { date: "Mar 5, 2026", cat: "finance", text: "Current NOI: $399,357 ($15.32/SF) — 7.91% going-in cap. Pro-forma NOI: $569,165 ($21.83/SF). Yield on cost: 10.06%. Stabilized value at 7.0% exit cap: ~$8,131,000. LP structure: 10% pref return + 25% of profit above pref. LP multiple projected: 1.49x." },
+        { date: "Mar 5, 2026", cat: "finance", text: "Real estate taxes: $91,821/yr (2025, payable 2026). Post-sale re-assessment expected — projected taxes 2027: $63,418 (based on 90% of $5,050,000 purchase price at 27% assessed / 51.679 mill levy). Tax parcels: R09169 (North), R09170 (South), R10018 (Verizon Pad). Total assessed value (current): $1,776,751." },
+        { date: "Mar 5, 2026", cat: "leasing", text: "Rent roll — 11 tenants + 4 vacancies. Leased: 20,387 SF (78.2%). Vacant: 5,688 SF (21.8%) across suites 4327 (1,311 SF), 4329 (1,706 SF), 4335 (1,160 SF), 4435 (1,511 SF endcap). Scheduled gross rent: $598,687/yr ($22.96/SF avg)." },
+        { date: "Mar 5, 2026", cat: "leasing", text: "Tenant roster: Einstein Bros. 4325 (2,353 SF, $28/SF, exp 10/31/2029, 3x5yr options) | Pizza Hut 4331 (1,276 SF, $17.44/SF, exp 8/1/2031, 2x5yr options, escalates to $19.62 on 9/1/2026) | Sante Beer/Wine/Liquor 4333 (1,834 SF, $24/SF, exp 7/31/2035, 2x5yr options, annual $0.50 escalations) | 9Round Centennial 4337 (1,582 SF, $22.51/SF, exp 5/31/2026 — NEAR EXPIRY, 2x5yr options) | Blossom Nails 4417 (1,123 SF, $20/SF, exp 7/31/2030, 2x5yr options) | Pak Mail 4419 (1,224 SF, $23.05/SF, exp 11/30/2028) | H&R Block 4421 (1,200 SF, $21.75/SF, exp 4/30/2028) | Don Turis/3 Margaritas 4423 (2,479 SF, $14/SF, exp 4/30/2027, 2x5yr options) | Stash Smokes & Vapes 4427 (2,984 SF, $22/SF, exp 1/31/2027, 1x5yr option) | 92Chicken 4431 (1,932 SF, $24.40/SF, exp 7/31/2033, 2x5yr options) | Verizon Wireless 4319 PAD (2,400 SF, $24.97/SF, exp 1/31/2027, 1x3yr option)." },
+        { date: "Mar 5, 2026", cat: "closing", text: "Third party reports received: Phase I, Survey, PCA (AEI), roof inspection. Finalized reports to be sent to title and lender. Appraisal received. Target close Mar 19, 2026. Hard deadline: March 31, 2026." }
+      ],
+      tasks: [
+        { text: "URGENT: 9Round lease expires 5/31/2026 — confirm renewal or begin marketing suite 4337 (1,582 SF)", done: false, id: 3.1 },
+        { text: "TITLE (LTGC): Provide fully executed Operating Agreement + amendments for AR Pecan LLC", done: false, id: 3.11 },
+        { text: "TITLE (LTGC): Provide Articles of Organization for RBN Centennial LLC", done: false, id: 3.12 },
+        { text: "TITLE (LTGC): Provide fully executed Operating Agreement + amendments for RBN Centennial LLC", done: false, id: 3.13 },
+        { text: "TITLE (LTGC): Confirm title vesting as AR Pecan LLC & RBN Centennial LLC (TIC)", done: false, id: 3.14 },
+        { text: "TITLE (LTGC): Provide survey copy and invoice when available", done: false, id: 3.15 },
+        { text: "TITLE (LTGC): Provide mailing/forwarding address for closing documents", done: false, id: 3.16 },
+        { text: "TITLE (LTGC): Confirm 1031 exchange contact info (if applicable)", done: false, id: 3.17 },
+        { text: "TITLE (LTGC): Confirm attendance at closing — 102 S. Tejon St., Suite 600, Colorado Springs", done: false, id: 3.18 },
+        { text: "TITLE (LTGC): Provide insurance invoice for day-of-closing binding — Marissa Smith 719-634-4821 x8235", done: false, id: 3.19 },
+        { text: "REMINDER (Mar 6): Follow up on insurance binding for Westwind closing", done: false, id: 3.20 },
+        { text: "Send finalized Phase I, Survey, PCA & roof inspection reports to title and lender", done: false, id: 3.2 },
+        { text: "Finalize First Bank loan docs", done: false, id: 3.3 },
+        { text: "Confirm insurance binding coverage before closing", done: false, id: 3.4 },
+        { text: "Estoppel certificates from all tenants", done: false, id: 3.5 },
+        { text: "Title commitment — confirm clear", done: false, id: 3.6 },
+        { text: "Pre-closing walkthrough with HighPoint", done: false, id: 3.7 },
+        { text: "Hard deadline: Must close by March 31, 2026", done: false, id: 3.8 },
+        { text: "Post-close: Confirm tax re-assessment appeal strategy (potential reduction to ~$63,418/yr)", done: false, id: 3.9 }
+      ],
+      open: true
+    }
+  ],
+  assets: [
+    {
+      id: 1741200000004,
+      name: "Woodland Park Plaza", addr: "1063–1131 Highway 24, Woodland Park, CO 80863", type: "Retail / Shopping Center",
+      status: "Active", closedDate: "Feb 10, 2026", price: "$3,500,000", size: "23,791 SF",
+      lender: "", pm: "Kira Peterson — RIO", cap: "", noi: "~$450,000",
+      leasing: "Jason Kinsey & Brady Kinsey (Kinsey & Company CRE)",
+      amlead: "Mitch Veremeychik",
+      entity: "WP Park Ave LLC (Aviv Rubin) & WP Park Ave 2 LLC (Cory Gross) — TIC",
+      assetmgr: "", roofwarranty: "", investors: "",
+      notes: [
+        { date: "Mar 5", cat: "general", text: "Closed 02/10/26 at $3,500,000. TIC structure: WP Park Ave LLC (Aviv Rubin) & WP Park Ave 2 LLC (Cory Gross)." },
+        { date: "Mar 5", cat: "finance", text: "Current NOI: ~$450,000 (~12.9% cap on purchase price)." },
+        { date: "Mar 5", cat: "leasing", text: "Chase Bank — currently building out their space (3,778 SF, lease exp 12/2040)." },
+        { date: "Mar 5", cat: "leasing", text: "Hunt & Homestead Marketplace — lease signed. Space delivered 2/27/26. Rent commences sooner of opening or 90 days from delivery — estimated June 1, 2026." },
+        { date: "Mar 5", cat: "leasing", text: "1,112 SF available — asking $25.00/SF NNN ($12.10/SF NNNs). Last remaining vacancy. Brokers: Jason Kinsey (720-280-5757) & Brady Kinsey (303-847-1295), Kinsey & Company CRE." }
+      ],
+      tasks: [
+        { text: "Chase Bank — monitor buildout progress", done: false, id: 4.2 },
+        { text: "Chase Bank — track ADA compliance during buildout", done: false, id: 4.6 },
+        { text: "Hunt & Homestead — confirm rent commencement date (sooner of opening or Jun 1, 2026)", done: false, id: 4.3 },
+        { text: "Hunt & Homestead — Mold Remediation", done: false, id: 4.5 },
+        { text: "Lease up remaining 1,112 SF vacancy", done: false, id: 4.1 },
+        { text: "Set up PM onboarding with Kira Peterson (RIO)", done: false, id: 4.4 }
+      ],
+      open: true
+    },
+    {
+      id: 1741200000005,
+      name: "3247 S Lincoln St", addr: "3247 S Lincoln St, Englewood, CO 80113", type: "Medical",
+      status: "Active", closedDate: "Jan 27, 2026", price: "$1,775,000", size: "8,960 SF (6,727 SF DaVita + 2,233 SF vacant)",
+      lender: "First Bank ($1,556,250 — Acquisition + Future Funding)", pm: "Dylan Hall — RIO",
+      cap: "9.68% (yield on cost)", noi: "$128,756 current | $206,080 pro-forma (stabilized)",
+      leasing: "John Fairbairn (Fairbairn Commercial)",
+      notes: [
+        { date: "Jan 27, 2026", cat: "general", text: "Closed 1/27/2026 at $1,775,000. Entity: WP Lincoln LLC (Aviv Rubin, Manager). Single LLC. Total basis $2,128,402 ($237.54/SF). No 2025 cost segregation." },
+        { date: "Jan 27, 2026", cat: "finance", text: "Loan: First Bank $1,556,250. Equity: $572,152. LP investors: Janet S. Lepp & Philip T. Lones $100K (16.3%) | Stevens Family Trust $375K (61.0%) | NDTCO/John Fairbairn IRA $100K (16.3%) | Aviv Rubin $40K (6.5%). LP total: $615,000. Structure: 10% pref + 25% of net profit above pref. Projected LP multiple 1.49x (renewal) / 1.34x (as-is)." },
+        { date: "Jan 27, 2026", cat: "finance", text: "Uses: Purchase $1,775,000 | Acq fee $40,000 | CapEx $100,000 | LC $12,840 | Financing fees $15,563 | Closing costs $20,000 | TI/Reserves $165,000. TI/LC holdback from First Bank: $300,000. Operating funds: $24,244.86 + $257." },
+        { date: "Jan 27, 2026", cat: "legal", text: "DaVita (Total Renal Care, Inc.) — 6,727 RSF (BOMA per Sixth Amendment eff. 2/1/2024). Lease expires 1/31/2029. 2 renewal options × 5 years. Must exercise 180 days prior — deadline ~8/5/2028. Rent based on 6,500 SF during extended term; reverts to 6,727 SF upon renewal. CAM cap: 3% over 5-yr avg Controllable OpEx." },
+        { date: "Jan 27, 2026", cat: "finance", text: "DaVita rent schedule: Feb 2024–Jan 2025: $22.67/SF ($12,279.58/mo) | Feb 2025–Jan 2026: $23.01/SF ($12,463.75/mo) | Feb 2026–Jan 2027: $23.36/SF ($12,653.33/mo) | Feb 2027–Jan 2028: $23.71/SF ($12,842.92/mo) | Feb 2028–Jan 2029: $24.07/SF ($13,037.92/mo)." },
+        { date: "Jan 27, 2026", cat: "ops", text: "Vacancy: 2,233 SF at $25/SF NNN. Pro-forma NOI $206,080 at stabilization. Exit cap 6.5% → stabilized value ~$3,170,000. In discussions with DaVita re: early blend & extend." }
+      ],
+      tasks: [
+        { text: "Calendar DaVita renewal notice deadline — 180 days prior to 1/31/2029 = by 8/5/2028", done: false, id: 5.1 },
+        { text: "Confirm TI/LC holdback draw process with First Bank ($300,000 available)", done: false, id: 5.2 },
+        { text: "Confirm operating funds deposited to PM account ($24,244.86 + $257)", done: false, id: 5.3 },
+        { text: "Market 2,233 SF vacancy at $25/SF NNN", done: false, id: 5.4 },
+        { text: "Pursue DaVita blend & extend conversation", done: false, id: 5.5 }
+      ],
+      open: true
+    },
+    {
+      id: 1741200000006,
+      name: "4801 Larkmoore Ct", addr: "4801 Larkmoore Ct, Charlotte, NC", type: "IOS / Greenhouse",
+      status: "Active", closedDate: "Dec 30, 2025", price: "$3,100,000", size: "~3 AC / 7,500 SF greenhouse building",
+      lender: "SouthState Bank", pm: "Wendy Bell / Avison Young (issues — transition in progress)",
+      cap: "", noi: "$5,000/mo base rent",
+      leasing: "Ryan Kendall & Abby Rights (Avison Young)",
+      amlead: "Mitch Veremeychik", assetmgr: "HighPoint",
+      entity: "RBN Larkmoore LLC & NB Larkmoore LLC (TIC)",
+      notes: [
+        { date: "Mar 5", cat: "general", text: "Closed 12/30/25 at $3,100,000. TIC: RBN Larkmoore LLC & NB Larkmoore LLC. Lender: SouthState Bank. Asset mgr: HighPoint. Parcel ID: 14101138 (Mecklenburg County)." },
+        { date: "Mar 5", cat: "leasing", text: "TENANT: Commonwealth Nano Farms, LLC. Lease signatory: Chris Hostetler (chris@commonwealthnanofarms.com). Day-to-day contact: Rob Ellis, Astor Farms — 704-619-4934 | www.astoraqua.com. Tenant use: growing crops, storage & warehousing, general office. Hemp permitted; no marijuana." },
+        { date: "Mar 5", cat: "leasing", text: "LEASE TERM: 24 months from 12/30/25 — estimated expiry 12/30/27. Subject to 120-day mutual termination notice (Section 3.2). BASE RENT: $5,000/month flat for full term. No security deposit." },
+        { date: "Mar 5", cat: "leasing", text: "CAM: Tenant pays 22.8% proportionate share (common area lighting, stormwater, irrigation). CAM capped at 10% increase/year (controllable CAM only). Taxes: Tenant pays 22.8% of RE taxes, billed monthly as additional rent." },
+        { date: "Mar 5", cat: "leasing", text: "TENANT RESPONSIBILITIES: All MEP, utilities inside premises. Must carry $1M/$2M GL insurance (Landlord as additional insured). LANDLORD: Roof, exterior walls, structural, parking/drive areas. HOLDOVER: 150% of last month's base rent. Estoppel: due within 10 business days of request." },
+        { date: "Mar 5", cat: "ops", text: "PM transition underway — issues with current PM Wendy Bell (Avison Young). Call scheduled with James McGee, Providence Group Management." },
+        { date: "Mar 5", cat: "ops", text: "CONSTRUCTION (Roper Construction — Curt Russ, PM | 704.332.6737 / 815.520.9667 | Brad Sharp, Superintendent): Total contract $182,580.35. Contract date 2/16/26. Scope: 33 overhead coiling doors (Clopay 525 steel), masonry repair, exterior painting. Loading dock & asphalt paving deferred." },
+        { date: "Mar 5", cat: "ops", text: "PAY APP #1 (Invoice 5742): Work through 2/28/26. Amount due: $22,549.50 (due 3/28/26). 10% retainage: $2,505.50. Balance to finish incl. retainage: $160,030.85. Partial lien waiver signed by Curt Russ. Forward to HighPoint for processing." },
+        { date: "Mar 5", cat: "ops", text: "CONSTRUCTION SCHEDULE (35-day project, 2/18–4/7/26): Mobilization ✓ | Masonry setup/demo/work ✓ | Clean up ✓ | Exterior paint (2/25–3/6) — IN PROGRESS | Door deliveries (3/17–4/7) | Door demo & install (3/17–4/1) | Demo plumbing & conduits (4/2) | Point up / closeout (4/3–4/6)." }
+      ],
+      tasks: [
+        { text: "Call with James McGee (Providence Group Management) — tomorrow AM", done: false, id: 2.1 },
+        { text: "Evaluate Providence Group Management as replacement PM", done: false, id: 2.2 },
+        { text: "Decision on PM transition — notify Wendy Bell / Avison Young if proceeding", done: false, id: 2.3 },
+        { text: "Clarify relationship between Astor Farms (Rob Ellis) and Commonwealth Nano Farms, LLC (lease signatory)", done: false, id: 2.05 },
+        { text: "URGENT — Forward Pay App #1 ($22,549.50, due 3/28/26) to HighPoint for processing", done: false, id: 2.81 },
+        { text: "Confirm HighPoint has received Pay App #1 and lien waiver", done: false, id: 2.82 },
+        { text: "Construction — Exterior paint (2/25–3/6) — confirm completion with Curt Russ", done: false, id: 2.93 },
+        { text: "Construction — Confirm door deliveries on track (3/17–4/7)", done: false, id: 2.94 },
+        { text: "Construction — Door demo & install (3/17–4/1)", done: false, id: 2.95 },
+        { text: "Construction — Demo plumbing & conduits (4/2)", done: false, id: 2.96 },
+        { text: "Construction — Point up / project closeout (4/3–4/6)", done: false, id: 2.97 },
+        { text: "Confirm Commonwealth Nano Farms COI on file (req. $1M/$2M GL, Landlord as additional insured)", done: false, id: 2.4 },
+        { text: "Set up monthly rent collection — $5,000 base + 22.8% CAM & tax share", done: false, id: 2.5 },
+        { text: "Calendar lease expiry: 12/30/27 — begin re-leasing discussions ~6 months prior", done: false, id: 2.8 },
+        { text: "Calendar termination notice window — 120 days notice required by either party", done: false, id: 2.9 }
+      ],
+      open: true
+    }
+  ]
+};
+
+// ═══════════════════════════════════════════════════════════
+// PERSISTENCE
+// ═══════════════════════════════════════════════════════════
+const STORAGE_KEY = 'rbnTrackerV18';
+
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+function load() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.deals && parsed.assets) state = parsed;
+    }
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════════
+// UI STATE
+// ═══════════════════════════════════════════════════════════
+let currentTab = 'acq';
+let selDeal = null;
+let selAsset = null;
+let dealFilter = 'Under Contract';
+let claudeVisible = false;
+let claudeHistory = [];
+let pendingStateUpdate = null;
+
+// ═══════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════
+function stageBadge(s) {
+  const map = { 'LOI': 'loi', 'Under Contract': 'uc', 'Closed': 'closed', 'Passed': 'passed', 'Prospecting': 'prospect' };
+  return `<span class="badge badge-${map[s]||'loi'}">${s}</span>`;
+}
+function statusBadge(s) { return `<span class="badge badge-${s==='Active'?'active':'watch'}">${s}</span>`; }
+function catTag(cat) { return `<span class="update-cat cat-${cat||'general'}">${cat||'general'}</span>`; }
+
+// ── INNER TAB SWITCHER ──
+function switchInnerTab(btn, panelId) {
+  const container = btn.closest('.deal-detail, .asset-detail-body');
+  const scope = container || document.querySelector('#acqDetail .deal-detail, #assetDetail .asset-detail-body');
+  (scope||document).querySelectorAll('.inner-tab-btn').forEach(b => b.classList.remove('active'));
+  (scope||document).querySelectorAll('.inner-tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(panelId).classList.add('active');
+}
+
+// ── UPDATE LOG RENDERER ──
+const CAT_LABELS = { leasing:'Leasing', construction:'Construction', closing:'Closing', finance:'Finance', pm:'Prop. Mgmt', general:'General' };
+function renderUpdateLog(notes, type, idx, itemId) {
+  return `<div style="margin-top:0.1rem;">
+    <ul class="update-log">
+      ${notes.length ? notes.map((n,ni)=>`
+        <li class="update-item cat-${n.cat||'general'}">
+          <div class="update-meta">
+            <span class="update-date">${n.date||''}</span>
+            <span class="update-cat cat-${n.cat||'general'}">${CAT_LABELS[n.cat]||'General'}</span>
+          </div>
+          <span class="update-text">${n.text}</span>
+          <button class="update-del" onclick="deleteNote('${type}',${idx},${ni})">×</button>
+        </li>`).join('')
+      : '<li style="font-size:0.84rem;color:var(--slate-light);padding:0.75rem 0;font-style:italic;">No updates yet — add one below.</li>'}
+    </ul>
+    <div class="add-update-row">
+      <select id="upd-cat-${itemId}">
+        <option value="general">General</option>
+        <option value="leasing">Leasing</option>
+        <option value="construction">Construction</option>
+        <option value="closing">Closing</option>
+        <option value="finance">Finance</option>
+        <option value="pm">Prop. Mgmt</option>
+      </select>
+      <input type="text" id="upd-${itemId}" placeholder="Add an update…" onkeydown="if(event.key==='Enter')addUpdate('${type}',${idx},'${itemId}')">
+      <button class="btn btn-outline" onclick="addUpdate('${type}',${idx},'${itemId}')" style="font-size:0.7rem;">Add</button>
+    </div>
+  </div>`;
+}
+function addUpdate(type, idx, itemId) {
+  const inp = document.getElementById('upd-' + itemId);
+  const sel = document.getElementById('upd-cat-' + itemId);
+  const text = inp.value.trim(); if (!text) return;
+  const note = { date: todayStr(), cat: sel.value, text };
+  if (type === 'deal') { state.deals[idx].notes.unshift(note); save(); renderAcq(); }
+  else { state.assets[idx].notes.unshift(note); save(); renderAssetDetail(idx); }
+}
+function deleteNote(type, idx, ni) {
+  if (type === 'deal') { state.deals[idx].notes.splice(ni, 1); save(); renderAcq(); }
+  else { state.assets[idx].notes.splice(ni, 1); save(); renderAssetDetail(idx); }
+}
+
+// ── PROPERTY INFO PANEL RENDERERS ──
+function infoField(label, val) {
+  if (!val) return '';
+  return `<div class="info-field"><div class="info-label">${label}</div><div class="info-value">${(val+'').replace(/\n/g,'<br>')}</div></div>`;
+}
+function renderDealInfoPanel(d) {
+  const n = d.notes || [];
+  // Pull structured info from deal fields + notes categories
+  const financeNotes = n.filter(x=>x.cat==='finance').map(x=>x.text).join('<br><br>');
+  const closingNotes = n.filter(x=>x.cat==='closing').map(x=>x.text).join('<br><br>');
+  const leasingNotes = n.filter(x=>x.cat==='leasing').map(x=>x.text).join('<br><br>');
+  const genNotes = n.filter(x=>!x.cat||x.cat==='general').map(x=>x.text).join('<br><br>');
+  const hasInfo = financeNotes||closingNotes||leasingNotes||genNotes||d.broker||d.leasingBroker||d.lender||d.entity||d.targetClose;
+  if (!hasInfo) return '<div style="font-size:0.84rem;color:var(--slate-light);padding:0.75rem 0;font-style:italic;">Notes tagged Finance, Leasing, or Closing will appear here as structured reference info.</div>';
+  return `<div style="margin-top:0.1rem;">
+    <div class="info-section">
+      <div class="info-section-title">Deal</div>
+      <div class="info-grid">
+        ${infoField('Broker / Source', d.broker)}
+        ${infoField('Leasing Broker', d.leasingBroker)}
+        ${infoField('Lender', d.lender)}
+        ${infoField('Entity', d.entity)}
+        ${infoField('Target Close', d.targetClose)}
+      </div>
+    </div>
+    ${financeNotes ? `<div class="info-section"><div class="info-section-title">Finance</div><div class="info-field" style="max-width:100%;"><div class="info-value">${financeNotes}</div></div></div>` : ''}
+    ${closingNotes ? `<div class="info-section"><div class="info-section-title">Closing</div><div class="info-field" style="max-width:100%;"><div class="info-value">${closingNotes}</div></div></div>` : ''}
+    ${leasingNotes ? `<div class="info-section"><div class="info-section-title">Leasing</div><div class="info-field" style="max-width:100%;"><div class="info-value">${leasingNotes}</div></div></div>` : ''}
+    ${genNotes ? `<div class="info-section"><div class="info-section-title">General</div><div class="info-field" style="max-width:100%;"><div class="info-value">${genNotes}</div></div></div>` : ''}
+  </div>`;
+}
+function renderAssetInfoPanel(a) {
+  const n = a.notes || [];
+  const financeNotes = n.filter(x=>x.cat==='finance').map(x=>x.text).join('<br><br>');
+  const leasingNotes = n.filter(x=>x.cat==='leasing').map(x=>x.text).join('<br><br>');
+  const constructionNotes = n.filter(x=>x.cat==='construction').map(x=>x.text).join('<br><br>');
+  const pmNotes = n.filter(x=>x.cat==='pm').map(x=>x.text).join('<br><br>');
+  const genNotes = n.filter(x=>!x.cat||x.cat==='general').map(x=>x.text).join('<br><br>');
+  const hasInfo = financeNotes||leasingNotes||constructionNotes||pmNotes||genNotes||a.lender||a.pm||a.leasingBroker;
+  if (!hasInfo) return '<div style="font-size:0.84rem;color:var(--slate-light);padding:0.75rem 0;font-style:italic;">Notes tagged Finance, Leasing, Construction, or Prop. Mgmt will appear here as structured reference info.</div>';
+  return `<div style="margin-top:0.1rem;">
+    <div class="info-section">
+      <div class="info-section-title">Ownership & Financing</div>
+      <div class="info-grid">
+        ${infoField('Lender', a.lender)}
+        ${infoField('Property Manager', a.pm)}
+        ${infoField('Leasing Broker', a.leasingBroker)}
+        ${infoField('Cap Rate', a.cap)}
+        ${infoField('NOI', a.noi)}
+      </div>
+    </div>
+    ${leasingNotes ? `<div class="info-section"><div class="info-section-title">Leasing</div><div class="info-field" style="max-width:100%;"><div class="info-value">${leasingNotes}</div></div></div>` : ''}
+    ${financeNotes ? `<div class="info-section"><div class="info-section-title">Finance</div><div class="info-field" style="max-width:100%;"><div class="info-value">${financeNotes}</div></div></div>` : ''}
+    ${constructionNotes ? `<div class="info-section"><div class="info-section-title">Construction</div><div class="info-field" style="max-width:100%;"><div class="info-value">${constructionNotes}</div></div></div>` : ''}
+    ${pmNotes ? `<div class="info-section"><div class="info-section-title">Property Mgmt</div><div class="info-field" style="max-width:100%;"><div class="info-value">${pmNotes}</div></div></div>` : ''}
+    ${genNotes ? `<div class="info-section"><div class="info-section-title">General</div><div class="info-field" style="max-width:100%;"><div class="info-value">${genNotes}</div></div></div>` : ''}
+  </div>`;
+}
+function todayStr() { return new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+function uid() { return Date.now() + Math.random(); }
+
+// ═══════════════════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════════════════
+function switchTab(tab, btn) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('acqView').style.display = tab === 'acq' ? 'flex' : 'none';
+  document.getElementById('assetsView').style.display = tab === 'assets' ? 'flex' : 'none';
+  if (tab === 'acq') renderAcq();
+  else renderAssets();
+}
+
+// ═══════════════════════════════════════════════════════════
+// ACQUISITIONS
+// ═══════════════════════════════════════════════════════════
+const STAGES = ['Under Contract','LOI','Prospecting','Closed','Passed'];
+
+function filteredDeals() {
+  if (dealFilter === 'active') return state.deals.filter(d => ['Prospecting','LOI','Under Contract'].includes(d.stage));
+  return state.deals.filter(d => d.stage === dealFilter);
+}
+
+function renderAcq(idx) {
+  if (idx !== undefined) selDeal = idx;
+  renderStatsBar();
+  renderDealList();
+  renderDealDetail();
+}
+
+function renderStatsBar() {
+  const counts = {};
+  STAGES.forEach(s => counts[s] = state.deals.filter(d => d.stage === s).length);
+  const items = STAGES.map(s => ({ key: s, label: s === 'Under Contract' ? 'Under Contract' : s, num: counts[s] }));
+  document.getElementById('statsBar').innerHTML = items.map(item => `
+    <div class="stat-item ${dealFilter===item.key?'active-filter':''}" onclick="setFilter('${item.key}')">
+      <span class="stat-num">${item.num}</span>
+      <span class="stat-lbl">${item.label}</span>
+    </div>`).join('');
+}
+
+function setFilter(f) {
+  dealFilter = f;
+  selDeal = null;
+  renderAcq();
+  document.getElementById('acqDetail').innerHTML = '<div class="detail-empty">Select a deal to view details</div>';
+}
+
+function renderDealList() {
+  const deals = filteredDeals();
+  document.getElementById('dealList').innerHTML = deals.length === 0
+    ? '<div style="padding:1.5rem;text-align:center;color:var(--slate-light);font-size:0.82rem;font-style:italic;">No deals in this stage</div>'
+    : deals.map((d,i) => `
+      <div class="deal-item ${selDeal===i?'selected':''}" onclick="selectDeal(${i})">
+        <div class="deal-name">${d.name}</div>
+        <div class="deal-meta">${d.market} · ${d.type||'—'}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:0.35rem;">
+          <span class="deal-price">${d.price||'—'}</span>
+          ${stageBadge(d.stage)}
+        </div>
+      </div>`).join('');
+}
+
+function selectDeal(i) {
+  selDeal = i;
+  renderDealList();
+  renderDealDetail();
+}
+
+function renderDealDetail() {
+  const deals = filteredDeals();
+  if (selDeal === null || !deals[selDeal]) {
+    document.getElementById('acqDetail').innerHTML = '<div class="detail-empty">Select a deal to view details</div>';
+    return;
+  }
+  const d = deals[selDeal];
+  const realIdx = state.deals.findIndex(x => x.id === d.id);
+
+  document.getElementById('acqDetail').innerHTML = `
+    <div class="deal-detail">
+      <div class="detail-title-row">
+        <div>
+          <div class="detail-name" contenteditable="true" onblur="updateDealField(${realIdx},'name',this.textContent)">${d.name}</div>
+          <div style="margin-top:0.4rem;display:flex;gap:0.5rem;align-items:center;">
+            ${stageBadge(d.stage)}
+            <select class="stage-select" onchange="updateDealField(${realIdx},'stage',this.value)">
+              ${STAGES.map(s=>`<option ${d.stage===s?'selected':''}>${s}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="detail-actions">
+          ${d.stage==='Under Contract'?`<button class="btn btn-green" onclick="moveToClosed(${realIdx})">Mark Closed →</button>`:''}
+          <button class="btn btn-danger" onclick="deleteDeal(${realIdx})">Delete</button>
+        </div>
+      </div>
+
+      <div class="fields-grid">
+        ${fieldCard('Market', d.market||'', realIdx, 'market')}
+        ${fieldCard('Type', d.type||'', realIdx, 'type')}
+        ${fieldCard('Price', d.price||'', realIdx, 'price', true)}
+        ${fieldCard('Size', d.size||'', realIdx, 'size')}
+        ${fieldCard('PSF', d.psf||'', realIdx, 'psf', true)}
+        ${fieldCard('Cap Rate', d.cap||'', realIdx, 'cap')}
+        ${fieldCard('Target Close', d.targetClose||'', realIdx, 'targetClose')}
+        ${fieldCard('Entity', d.entity||'', realIdx, 'entity')}
+        ${fieldCard('Lender', d.lender||'', realIdx, 'lender')}
+      </div>
+      <div class="fields-grid" style="grid-template-columns:1fr 1fr;">
+        ${fieldCard('Acquisition Broker', d.broker||'', realIdx, 'broker')}
+        ${fieldCard('Leasing Broker', d.leasingBroker||'', realIdx, 'leasingBroker')}
+      </div>
+
+      <hr class="section-divider">
+
+      <div class="inner-tabs">
+        <button class="inner-tab-btn active" onclick="switchInnerTab(this,'dtasks-${d.id}')">Tasks (${(d.tasks||[]).filter(t=>!t.done).length} open)</button>
+        <button class="inner-tab-btn" onclick="switchInnerTab(this,'dinfo-${d.id}')">Property Info</button>
+        <button class="inner-tab-btn" onclick="switchInnerTab(this,'dlog-${d.id}')">Update Log (${(d.notes||[]).length})</button>
+      </div>
+
+      <div class="inner-tab-panel active" id="dtasks-${d.id}">
+        <div class="tasks-list" id="tasksDeal${realIdx}">
+          ${(d.tasks||[]).map((t,ti)=>`
+            <div class="task-item ${t.done?'done-task':''}" id="taskitem-deal-${realIdx}-${ti}">
+              <input type="checkbox" class="task-check" ${t.done?'checked':''} onchange="toggleTask('deal',${realIdx},${ti})">
+              <span class="task-text ${t.done?'done':''}" contenteditable="true" onblur="updateTask('deal',${realIdx},${ti},this.textContent)">${t.text}</span>
+              <button class="task-cal" title="Add to Google Calendar" onclick="addTaskToCalendar(this,'${escHtml(d.name)}','${escHtml(t.text)}')">📅</button>
+              <button class="task-del" onclick="deleteTask('deal',${realIdx},${ti})">✕</button>
+            </div>`).join('')}
+        </div>
+        <div class="add-task-row">
+          <input class="add-task-input" id="newTaskDeal${realIdx}" placeholder="Add a task…" onkeydown="if(event.key==='Enter')addTask('deal',${realIdx})">
+          <button class="btn btn-outline" onclick="addTask('deal',${realIdx})" style="font-size:0.7rem;">Add</button>
+        </div>
+      </div>
+
+      <div class="inner-tab-panel" id="dinfo-${d.id}">
+        ${renderDealInfoPanel(d)}
+      </div>
+
+      <div class="inner-tab-panel" id="dlog-${d.id}">
+        ${renderUpdateLog(d.notes||[], 'deal', realIdx, d.id)}
+      </div>
+
+    </div>`;
+}
+
+function fieldCard(label, val, idx, field, mono=false) {
+  return `<div class="field-card">
+    <div class="field-label">${label}</div>
+    <input class="field-input ${mono?'mono':''}" value="${val.replace(/"/g,'&quot;')}" 
+      onblur="updateDealField(${idx},'${field}',this.value)" 
+      placeholder="—">
+  </div>`;
+}
+
+function fieldCardAsset(label, val, idx, field, mono=false) {
+  return `<div class="field-card">
+    <div class="field-label">${label}</div>
+    <input class="field-input ${mono?'mono':''}" value="${(val||'').replace(/"/g,'&quot;')}" 
+      onblur="updateAssetField(${idx},'${field}',this.value)" 
+      placeholder="—">
+  </div>`;
+}
+
+function updateDealField(idx, field, val) {
+  state.deals[idx][field] = val.trim();
+  save();
+  renderAcq();
+}
+
+function addTask(type, idx) {
+  const el = document.getElementById(`newTask${type==='deal'?'Deal':'Asset'}${idx}`);
+  const text = el.value.trim();
+  if (!text) return;
+  const task = { text, done: false, id: uid() };
+  if (type === 'deal') state.deals[idx].tasks.push(task);
+  else state.assets[idx].tasks.push(task);
+  save();
+  el.value = '';
+  if (type === 'deal') renderAcq();
+  else renderAssetDetail(idx);
+}
+
+function addTaskPrompt(type, idx) {
+  const el = document.getElementById(`newTask${type==='deal'?'Deal':'Asset'}${idx}`);
+  if (el) el.focus();
+}
+
+function toggleTask(type, idx, ti) {
+  if (type === 'deal') state.deals[idx].tasks[ti].done = !state.deals[idx].tasks[ti].done;
+  else state.assets[idx].tasks[ti].done = !state.assets[idx].tasks[ti].done;
+  save();
+}
+
+function updateTask(type, idx, ti, val) {
+  if (type === 'deal') state.deals[idx].tasks[ti].text = val;
+  else state.assets[idx].tasks[ti].text = val;
+  save();
+}
+
+function deleteTask(type, idx, ti) {
+  if (type === 'deal') state.deals[idx].tasks.splice(ti, 1);
+  else state.assets[idx].tasks.splice(ti, 1);
+  save();
+  if (type === 'deal') renderAcq();
+  else renderAssets();
+}
+
+function escHtml(str) {
+  return (str||'').replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+}
+
+function addTaskToCalendar(btn, propertyName, taskText) {
+  // Extract date from task text if present (e.g. "Mar 6", "March 31")
+  const today = new Date();
+  const year = today.getFullYear();
+  let eventDate = new Date(today);
+  eventDate.setDate(eventDate.getDate() + 1); // default: tomorrow
+
+  const dateMatch = taskText.match(/\b(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+(\d{1,2})/i);
+  if (dateMatch) {
+    const parsed = new Date(`${dateMatch[0]} ${year}`);
+    if (!isNaN(parsed)) {
+      if (parsed < today) parsed.setFullYear(year + 1);
+      eventDate = parsed;
+    }
+  }
+
+  // Format as YYYYMMDD for Google Calendar
+  const pad = n => String(n).padStart(2,'0');
+  const dateStr = `${eventDate.getFullYear()}${pad(eventDate.getMonth()+1)}${pad(eventDate.getDate())}`;
+
+  const title = encodeURIComponent(`[RBN] ${propertyName} — ${taskText}`);
+  const details = encodeURIComponent(`Task from RBN Group Investment Tracker\nProperty: ${propertyName}`);
+  const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dateStr}/${dateStr}&details=${details}`;
+
+  window.open(url, '_blank');
+
+  btn.classList.add('cal-done');
+  btn.textContent = '✓';
+  btn.title = `Opened in Google Calendar — ${eventDate.toDateString()}`;
+  btn.style.color = '#2d6a4f';
+  btn.style.opacity = '1';
+  setTimeout(() => {
+    btn.textContent = '📅';
+    btn.classList.remove('cal-done');
+    btn.style.color = '';
+    btn.style.opacity = '';
+    btn.title = 'Add to Google Calendar';
+  }, 3000);
+}
+
+function deleteDeal(idx) {
+  if (!confirm(`Delete "${state.deals[idx].name}"? This cannot be undone.`)) return;
+  state.deals.splice(idx, 1);
+  selDeal = null;
+  save();
+  renderAcq();
+}
+
+function moveToClosed(idx) {
+  if (!confirm(`Mark "${state.deals[idx].name}" as Closed and add to Asset Management?`)) return;
+  const d = state.deals[idx];
+  d.stage = 'Closed';
+  const asset = {
+    id: uid(),
+    name: d.name, addr: d.market, type: d.type,
+    status: 'Active', closedDate: todayStr(), price: d.price, size: d.size,
+    lender: d.lender||'', pm: '', cap: d.cap||'', noi: '', leasingBroker: d.leasingBroker||'',
+    notes: [...(d.notes||[])],
+    tasks: [...(d.tasks||[])],
+    open: true
+  };
+  state.assets.unshift(asset);
+  save();
+  selDeal = null;
+  renderAcq();
+}
+
+// ═══════════════════════════════════════════════════════════
+// NEW DEAL MODAL
+// ═══════════════════════════════════════════════════════════
+function showNewDealModal() { document.getElementById('newDealModal').classList.remove('hidden'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+function createNewDeal() {
+  const name = document.getElementById('nd-name').value.trim();
+  if (!name) return alert('Property name required');
+  const deal = {
+    id: uid(),
+    name, market: document.getElementById('nd-market').value,
+    type: document.getElementById('nd-type').value,
+    stage: document.getElementById('nd-stage').value,
+    price: document.getElementById('nd-price').value,
+    size: document.getElementById('nd-size').value,
+    cap: document.getElementById('nd-cap').value,
+    targetClose: document.getElementById('nd-close').value,
+    broker: document.getElementById('nd-broker').value,
+    entity: document.getElementById('nd-entity').value,
+    psf: '', lender: '',
+    notes: [{ date: todayStr(), cat: 'general', text: `Deal created ${todayStr()}.` }],
+    tasks: [], open: true
+  };
+  state.deals.push(deal);
+  save();
+  closeModal('newDealModal');
+  dealFilter = 'active';
+  renderAcq();
+  ['nd-name','nd-market','nd-type','nd-price','nd-size','nd-cap','nd-close','nd-broker','nd-entity'].forEach(id => document.getElementById(id).value = '');
+}
+
+// ═══════════════════════════════════════════════════════════
+// ASSETS
+// ═══════════════════════════════════════════════════════════
+function renderAssets(idx) {
+  if (idx !== undefined) selAsset = idx;
+  renderAssetList();
+  if (selAsset !== null) renderAssetDetail(selAsset);
+}
+
+function renderAssetList() {
+  document.getElementById('assetList').innerHTML = state.assets.map((a,i) => `
+    <div class="asset-item ${selAsset===i?'selected':''}" onclick="selectAsset(${i})">
+      <div class="deal-name">${a.name}</div>
+      <div class="deal-meta">${a.addr} · ${a.type||'—'}</div>
+      <div class="deal-meta" style="margin-top:0.15rem;color:var(--slate-light);">Closed ${a.closedDate||'—'}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:0.35rem;">
+        <span class="deal-price">${a.price||'—'}</span>
+        ${statusBadge(a.status||'Active')}
+      </div>
+    </div>`).join('');
+}
+
+function selectAsset(i) {
+  selAsset = i;
+  renderAssetList();
+  renderAssetDetail(i);
+}
+
+function renderAssetDetail(idx) {
+  const a = state.assets[idx];
+  if (!a) return;
+  document.getElementById('assetDetail').innerHTML = `
+    <div class="deal-detail">
+      <div class="detail-title-row">
+        <div>
+          <div class="detail-name" contenteditable="true" onblur="updateAssetField(${idx},'name',this.textContent)">${a.name}</div>
+          <div style="margin-top:0.4rem;display:flex;gap:0.5rem;align-items:center;">
+            ${statusBadge(a.status||'Active')}
+            <select class="stage-select" onchange="updateAssetField(${idx},'status',this.value)">
+              <option ${(a.status||'Active')==='Active'?'selected':''}>Active</option>
+              <option ${a.status==='Watch'?'selected':''}>Watch</option>
+            </select>
+          </div>
+        </div>
+        <div class="detail-actions">
+          <button class="btn btn-danger" onclick="deleteAsset(${idx})">Delete</button>
+        </div>
+      </div>
+
+      <div class="fields-grid">
+        ${fieldCardAsset('Address', a.addr||'', idx, 'addr')}
+        ${fieldCardAsset('Type', a.type||'', idx, 'type')}
+        ${fieldCardAsset('Price', a.price||'', idx, 'price', true)}
+        ${fieldCardAsset('Size', a.size||'', idx, 'size')}
+        ${fieldCardAsset('Closed Date', a.closedDate||'', idx, 'closedDate')}
+        ${fieldCardAsset('Lender', a.lender||'', idx, 'lender')}
+        ${fieldCardAsset('Property Manager', a.pm||'', idx, 'pm')}
+        ${fieldCardAsset('Leasing Broker', a.leasing||a.leasingBroker||'', idx, 'leasing')}
+        ${fieldCardAsset('Cap Rate', a.cap||'', idx, 'cap')}
+        ${fieldCardAsset('NOI', a.noi||'', idx, 'noi', true)}
+      </div>
+
+      <hr class="section-divider">
+
+      <div class="inner-tabs">
+        <button class="inner-tab-btn active" onclick="switchInnerTab(this,'atasks-${a.id}')">Tasks (${(a.tasks||[]).filter(t=>!t.done).length} open)</button>
+        <button class="inner-tab-btn" onclick="switchInnerTab(this,'ainfo-${a.id}')">Property Info</button>
+        <button class="inner-tab-btn" onclick="switchInnerTab(this,'alog-${a.id}')">Update Log (${(a.notes||[]).length})</button>
+      </div>
+
+      <div class="inner-tab-panel active" id="atasks-${a.id}">
+        <div class="tasks-list" id="tasksAsset${idx}">
+          ${(a.tasks||[]).map((t,ti)=>`
+            <div class="task-item ${t.done?'done-task':''}" id="taskitem-asset-${idx}-${ti}">
+              <input type="checkbox" class="task-check" ${t.done?'checked':''} onchange="toggleTask('asset',${idx},${ti})">
+              <span class="task-text ${t.done?'done':''}" contenteditable="true" onblur="updateTask('asset',${idx},${ti},this.textContent)">${t.text}</span>
+              <button class="task-cal" title="Add to Google Calendar" onclick="addTaskToCalendar(this,'${escHtml(a.name)}','${escHtml(t.text)}')">📅</button>
+              <button class="task-del" onclick="deleteTask('asset',${idx},${ti})">✕</button>
+            </div>`).join('')}
+        </div>
+        <div class="add-task-row">
+          <input class="add-task-input" id="newTaskAsset${idx}" placeholder="Add a task…" onkeydown="if(event.key==='Enter')addTask('asset',${idx})">
+          <button class="btn btn-outline" onclick="addTask('asset',${idx})" style="font-size:0.7rem;">Add</button>
+        </div>
+      </div>
+
+      <div class="inner-tab-panel" id="ainfo-${a.id}">
+        ${renderAssetInfoPanel(a)}
+      </div>
+
+      <div class="inner-tab-panel" id="alog-${a.id}">
+        ${renderUpdateLog(a.notes||[], 'asset', idx, a.id)}
+      </div>
+
+    </div>`;
+}
+
+function updateAssetField(idx, field, val) {
+  state.assets[idx][field] = (val||'').trim();
+  save();
+  renderAssets(idx);
+}
+
+function deleteAsset(idx) {
+  if (!confirm(`Delete "${state.assets[idx].name}"?`)) return;
+  state.assets.splice(idx, 1);
+  selAsset = null;
+  save();
+  renderAssets();
+  document.getElementById('assetDetail').innerHTML = '<div class="detail-empty">Select a property to view details</div>';
+}
+
+function showNewAssetModal() { document.getElementById('newAssetModal').classList.remove('hidden'); }
+
+function createNewAsset() {
+  const name = document.getElementById('na-name').value.trim();
+  if (!name) return alert('Property name required');
+  const asset = {
+    id: uid(),
+    name, addr: document.getElementById('na-addr').value,
+    type: document.getElementById('na-type').value,
+    status: 'Active',
+    closedDate: document.getElementById('na-closed').value,
+    price: document.getElementById('na-price').value,
+    size: document.getElementById('na-size').value,
+    lender: document.getElementById('na-lender').value,
+    pm: document.getElementById('na-pm').value,
+    cap: document.getElementById('na-cap').value,
+    noi: document.getElementById('na-noi').value,
+    notes: [{ date: todayStr(), cat: 'general', text: `Asset added ${todayStr()}.` }],
+    tasks: [], open: true
+  };
+  state.assets.unshift(asset);
+  save();
+  closeModal('newAssetModal');
+  renderAssets(0);
+  ['na-name','na-addr','na-type','na-price','na-size','na-closed','na-lender','na-pm','na-cap','na-noi'].forEach(id => document.getElementById(id).value='');
+}
+
+// ═══════════════════════════════════════════════════════════
+// CLAUDE INTEGRATION
+// ═══════════════════════════════════════════════════════════
+function toggleClaude() {
+  claudeVisible = !claudeVisible;
+  document.getElementById('claudePanel').classList.toggle('hidden', !claudeVisible);
+  document.querySelector('.claude-toggle').textContent = claudeVisible ? '✕ Close' : '✦ Ask Claude';
+}
+
+function handleClaudeKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendToClaude(); }
+}
+
+function addMsg(role, text) {
+  const el = document.getElementById('claudeMessages');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.textContent = text;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+  return div;
+}
+
+function addThinking() {
+  const el = document.getElementById('claudeMessages');
+  const div = document.createElement('div');
+  div.className = 'msg assistant';
+  div.innerHTML = '<div class="thinking"><span></span><span></span><span></span></div>';
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+  return div;
+}
+
+async function sendToClaude() {
+  const input = document.getElementById('claudeInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  document.getElementById('claudeSend').disabled = true;
+  document.getElementById('applyArea').innerHTML = '';
+
+  addMsg('user', text);
+  claudeHistory.push({ role: 'user', content: text });
+
+  const thinking = addThinking();
+
+  const systemPrompt = `You are an AI assistant embedded in the RBN Group real estate investment tracker for Mitch Veremeychik.
+
+You have access to the current state of the tracker as JSON. When the user asks you to make changes, respond with:
+1. A brief confirmation of what you're doing (1-2 sentences)
+2. Then on a new line: STATEUPDATE: followed by the complete updated state as valid JSON
+
+The state has this shape:
+{ "deals": [...], "assets": [...] }
+
+Each deal has: id, name, market, type, stage (Prospecting|LOI|Under Contract|Closed|Passed), price, psf, cap, size, broker, entity, targetClose, lender, notes (array of {date,cat,text}), tasks (array of {text,done,id})
+
+Each asset has: id, name, addr, type, status (Active|Watch), closedDate, price, size, lender, pm, cap, noi, notes, tasks
+
+Current tracker state:
+${JSON.stringify(state, null, 2)}
+
+Important rules:
+- Always preserve all existing data unless explicitly told to delete something
+- When adding notes, prepend to the notes array (newest first)
+- Use today's date (${todayStr()}) for new notes
+- Keep all IDs intact — never change existing IDs
+- If no state change is needed (just answering a question), don't include STATEUPDATE
+- Be concise in your explanations`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 8000,
+        system: systemPrompt,
+        messages: claudeHistory
+      })
+    });
+
+    const data = await response.json();
+    thinking.remove();
+
+    const fullText = data.content?.[0]?.text || 'Sorry, I encountered an error.';
+    claudeHistory.push({ role: 'assistant', content: fullText });
+
+    // Check for state update
+    const updateIdx = fullText.indexOf('STATEUPDATE:');
+    if (updateIdx !== -1) {
+      const explanation = fullText.substring(0, updateIdx).trim();
+      const jsonStr = fullText.substring(updateIdx + 12).trim();
+
+      addMsg('assistant', explanation || 'Done — review the changes below.');
+
+      // Show apply button
+      pendingStateUpdate = jsonStr;
+      document.getElementById('applyArea').innerHTML = `
+        <button class="apply-btn" onclick="applyStateUpdate()">✓ Apply Changes to Tracker</button>`;
+    } else {
+      addMsg('assistant', fullText);
+    }
+  } catch(e) {
+    thinking.remove();
+    addMsg('assistant', 'Error connecting to Claude API. Please check your connection.');
+    console.error(e);
+  }
+
+  document.getElementById('claudeSend').disabled = false;
+}
+
+function applyStateUpdate() {
+  if (!pendingStateUpdate) return;
+  try {
+    const newState = JSON.parse(pendingStateUpdate);
+    if (newState.deals && newState.assets) {
+      state = newState;
+      save();
+      addMsg('system', '✓ Tracker updated successfully.');
+      document.getElementById('applyArea').innerHTML = '';
+      pendingStateUpdate = null;
+      selDeal = null;
+      selAsset = null;
+      if (currentTab === 'acq') renderAcq();
+      else renderAssets();
+    }
+  } catch(e) {
+    addMsg('system', '⚠ Could not parse update. Try rephrasing your request.');
+    console.error(e);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-US', { weekday:'short', month:'long', day:'numeric', year:'numeric' });
+
+load();
+renderAcq();
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.add('hidden'); });
+});
+
+// Auto-resize Claude textarea
+document.getElementById('claudeInput').addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
+</script>
+</body>
+</html>
