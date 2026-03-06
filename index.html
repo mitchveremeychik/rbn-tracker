@@ -364,6 +364,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(
       <div class="form-group"><label>Property Manager</label><input id="na-pm" placeholder="PM Company"></div>
       <div class="form-group"><label>Cap Rate</label><input id="na-cap" placeholder="7.5%"></div>
       <div class="form-group"><label>NOI</label><input id="na-noi" placeholder="$150,000"></div>
+      <div class="form-group"><label>Entity</label><input id="na-entity" placeholder="RBN Holdings LLC"></div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('newAssetModal')">Cancel</button>
@@ -821,9 +822,10 @@ function renderAssetInfoPanel(a) {
     <div class="info-section">
       <div class="info-section-title">Ownership & Financing</div>
       <div class="info-grid">
+        ${infoField('Entity', a.entity)}
         ${infoField('Lender', a.lender)}
         ${infoField('Property Manager', a.pm)}
-        ${infoField('Leasing Broker', a.leasingBroker)}
+        ${infoField('Leasing Broker', a.leasingBroker||a.leasing)}
         ${infoField('Cap Rate', a.cap)}
         ${infoField('NOI', a.noi)}
       </div>
@@ -1252,6 +1254,7 @@ function renderAssetDetail(idx) {
         ${fieldCardAsset('Address', a.addr||'', idx, 'addr')}
         ${fieldCardAsset('Type', a.type||'', idx, 'type')}
         ${fieldCardAsset('Price', a.price||'', idx, 'price', true)}
+        ${fieldCardAsset('Entity', a.entity||'', idx, 'entity')}
         ${fieldCardAsset('Size', a.size||'', idx, 'size')}
         ${fieldCardAsset('Closed Date', a.closedDate||'', idx, 'closedDate')}
         ${fieldCardAsset('Lender', a.lender||'', idx, 'lender')}
@@ -1328,6 +1331,7 @@ function createNewAsset() {
     pm: document.getElementById('na-pm').value,
     cap: document.getElementById('na-cap').value,
     noi: document.getElementById('na-noi').value,
+    entity: (document.getElementById('na-entity') ? document.getElementById('na-entity').value : ''),
     notes: [{ date: todayStr(), cat: 'general', text: `Asset added ${todayStr()}.` }],
     tasks: [], open: true
   };
