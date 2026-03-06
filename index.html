@@ -432,7 +432,7 @@ let state = {
       id: 1741200000006,
       name: "4801 Larkmoore Ct", market: "Charlotte, NC", type: "IOS",
       stage: "Closed", price: "$3,100,000", psf: "", cap: "", size: "25,312 SF",
-      broker: "Ryan Kendall & Abby Rights (Avison Young)", entity: "RBN Larkmoore LLC & NB Larkmoore LLC (TIC)", targetClose: "Dec 30, 2025", lender: "SouthState Bank",
+      broker: "Ryan Kendall & Abby Rights (Avison Young)", entity: "RBN Larkmoore LLC\nNB Larkmoore LLC (TIC)", targetClose: "Dec 30, 2025", lender: "SouthState Bank",
       notes: [
         { date: "Dec 30, 2025", cat: "general", text: "Closed 12/30/2025. $3,100,000. 25,312 SF industrial/flex in Charlotte NC. TIC: RBN Larkmoore LLC & NB Larkmoore LLC." },
         { date: "Feb 19", cat: "ops", text: "Move-in demo & work completed 2/19–2/24. ✓" },
@@ -598,7 +598,7 @@ let state = {
       lender: "", pm: "Kira Peterson — RIO", cap: "", noi: "~$450,000",
       leasing: "Jason Kinsey & Brady Kinsey (Kinsey & Company CRE)",
       amlead: "Mitch Veremeychik",
-      entity: "WP Park Ave LLC (Aviv Rubin) & WP Park Ave 2 LLC (Cory Gross) — TIC",
+      entity: "WP Park Ave LLC (Aviv Rubin)\nWP Park Ave 2 LLC (Cory Gross) — TIC",
       assetmgr: "", roofwarranty: "", investors: "",
       notes: [
         { date: "Mar 5", cat: "general", text: "Closed 02/10/26 at $3,500,000. TIC structure: WP Park Ave LLC (Aviv Rubin) & WP Park Ave 2 LLC (Cory Gross)." },
@@ -822,7 +822,7 @@ function renderAssetInfoPanel(a) {
     <div class="info-section">
       <div class="info-section-title">Ownership & Financing</div>
       <div class="info-grid">
-        ${infoField('Entity', a.entity)}
+        ${a.entity ? `<div class="info-field"><div class="info-label">Entity</div><div class="info-value" style="white-space:pre-line;">${(a.entity||'').replace(/&/g,'&amp;')}</div></div>` : ''}
         ${infoField('Lender', a.lender)}
         ${infoField('Property Manager', a.pm)}
         ${infoField('Leasing Broker', a.leasingBroker||a.leasing)}
@@ -1045,6 +1045,16 @@ function fieldCard(label, val, idx, field, mono=false) {
   </div>`;
 }
 
+function fieldCardAssetMultiline(label, val, idx, field) {
+  const escaped = (val||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return `<div class="field-card">
+    <div class="field-label">${label}</div>
+    <textarea class="field-input" rows="2" style="resize:none;height:auto;min-height:2.6rem;line-height:1.35;padding-top:0.3rem;"
+      onblur="updateAssetField(${idx},'${field}',this.value)"
+      placeholder="—">${escaped}</textarea>
+  </div>`;
+}
+
 function fieldCardAsset(label, val, idx, field, mono=false) {
   return `<div class="field-card">
     <div class="field-label">${label}</div>
@@ -1254,7 +1264,7 @@ function renderAssetDetail(idx) {
         ${fieldCardAsset('Address', a.addr||'', idx, 'addr')}
         ${fieldCardAsset('Type', a.type||'', idx, 'type')}
         ${fieldCardAsset('Price', a.price||'', idx, 'price', true)}
-        ${fieldCardAsset('Entity', a.entity||'', idx, 'entity')}
+        ${fieldCardAssetMultiline('Entity', a.entity||'', idx, 'entity')}
         ${fieldCardAsset('Size', a.size||'', idx, 'size')}
         ${fieldCardAsset('Closed Date', a.closedDate||'', idx, 'closedDate')}
         ${fieldCardAsset('Lender', a.lender||'', idx, 'lender')}
