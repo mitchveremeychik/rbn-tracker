@@ -96,7 +96,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(
 .field-label { font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--slate); margin-bottom: 0.35rem; }
 .field-value { font-size: 0.88rem; color: var(--ink); font-weight: 500; }
 .field-value.mono { font-family: 'Inconsolata', monospace; }
-.field-input { width: 100%; border: none; outline: none; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; color: var(--ink); font-weight: 500; background: transparent; }
+.field-input { width: 100%; border: none; outline: none; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; color: var(--ink); font-weight: 500; background: transparent; resize: none; overflow: hidden; line-height: 1.4; min-height: 1.3rem; display: block; }
 .field-card:focus-within { border-color: var(--gold); background: var(--gold-bg); }
 
 /* ── INNER TABS ── */
@@ -1037,30 +1037,24 @@ function renderDealDetail() {
 }
 
 function fieldCard(label, val, idx, field, mono=false) {
+  const escaped = (val||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   return `<div class="field-card">
     <div class="field-label">${label}</div>
-    <input class="field-input ${mono?'mono':''}" value="${val.replace(/"/g,'&quot;')}" 
-      onblur="updateDealField(${idx},'${field}',this.value)" 
-      placeholder="—">
-  </div>`;
-}
-
-function fieldCardAssetMultiline(label, val, idx, field) {
-  const escaped = (val||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  return `<div class="field-card">
-    <div class="field-label">${label}</div>
-    <textarea class="field-input" rows="2" style="resize:none;height:auto;min-height:2.6rem;line-height:1.35;padding-top:0.3rem;"
-      onblur="updateAssetField(${idx},'${field}',this.value)"
+    <textarea class="field-input ${mono?'mono':''}"
+      onblur="updateDealField(${idx},'${field}',this.value)"
+      oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
       placeholder="—">${escaped}</textarea>
   </div>`;
 }
 
 function fieldCardAsset(label, val, idx, field, mono=false) {
+  const escaped = (val||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   return `<div class="field-card">
     <div class="field-label">${label}</div>
-    <input class="field-input ${mono?'mono':''}" value="${(val||'').replace(/"/g,'&quot;')}" 
-      onblur="updateAssetField(${idx},'${field}',this.value)" 
-      placeholder="—">
+    <textarea class="field-input ${mono?'mono':''}"
+      onblur="updateAssetField(${idx},'${field}',this.value)"
+      oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
+      placeholder="—">${escaped}</textarea>
   </div>`;
 }
 
@@ -1264,7 +1258,7 @@ function renderAssetDetail(idx) {
         ${fieldCardAsset('Address', a.addr||'', idx, 'addr')}
         ${fieldCardAsset('Type', a.type||'', idx, 'type')}
         ${fieldCardAsset('Price', a.price||'', idx, 'price', true)}
-        ${fieldCardAssetMultiline('Entity', a.entity||'', idx, 'entity')}
+        ${fieldCardAsset('Entity', a.entity||'', idx, 'entity')}
         ${fieldCardAsset('Size', a.size||'', idx, 'size')}
         ${fieldCardAsset('Closed Date', a.closedDate||'', idx, 'closedDate')}
         ${fieldCardAsset('Lender', a.lender||'', idx, 'lender')}
