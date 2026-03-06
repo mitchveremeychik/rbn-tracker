@@ -195,7 +195,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(
 
 /* ── RBN TASKS ── */
 .rbn-priority-section { margin-bottom: 1.75rem; }
-.rbn-section-header { display: flex; align-items: center; gap: 0.6rem; font-family: 'DM Sans', sans-serif; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--slate); border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; }
+.rbn-section-header { display: flex; align-items: center; gap: 0.6rem; font-family: 'DM Sans', sans-serif; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #2a2a2a; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; }
 .rbn-priority-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .rbn-priority-dot.urgent { background: #e05c5c; }
 .rbn-priority-dot.normal { background: #c9a84c; }
@@ -206,14 +206,14 @@ body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(
 .rbn-task-item:hover .rbn-task-del { opacity: 1; }
 .rbn-task-cb { width: 15px; height: 15px; border-radius: 3px; border: 1.5px solid var(--slate); background: transparent; cursor: pointer; flex-shrink: 0; appearance: none; transition: all 0.15s; }
 .rbn-task-cb:checked { background: var(--gold); border-color: var(--gold); }
-.rbn-task-text { flex: 1; font-size: 0.84rem; color: #e8e4dc; line-height: 1.4; }
+.rbn-task-text { flex: 1; font-size: 0.84rem; color: #1a1a1a; line-height: 1.4; }
 .rbn-task-text.done { text-decoration: line-through; color: var(--slate); }
 .rbn-priority-badge { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 0.12rem 0.4rem; border-radius: 2px; flex-shrink: 0; }
 .rbn-priority-badge.urgent { background: rgba(224,92,92,0.15); color: #e05c5c; }
 .rbn-priority-badge.normal { background: rgba(201,168,76,0.15); color: #c9a84c; }
 .rbn-priority-badge.someday { background: rgba(92,143,224,0.15); color: #5c8fe0; }
 .rbn-task-del { background: none; border: none; color: var(--slate-light); cursor: pointer; font-size: 0.9rem; opacity: 0; transition: opacity 0.15s; padding: 0 2px; }
-.rbn-empty { color: var(--slate-light); font-size: 0.78rem; font-style: italic; padding: 0.5rem 0.5rem 0; }
+.rbn-empty { color: #6b6b6b; font-size: 0.78rem; font-style: italic; padding: 0.5rem 0.5rem 0; }
 
 @keyframes pulse { 0%,80%,100%{opacity:0.3;transform:scale(0.8)} 40%{opacity:1;transform:scale(1)} }
 </style>
@@ -689,7 +689,7 @@ let state = {
 // ═══════════════════════════════════════════════════════════
 // PERSISTENCE
 // ═══════════════════════════════════════════════════════════
-const STORAGE_KEY = 'rbnTrackerV21';
+const STORAGE_KEY = 'rbnTrackerV22';
 
 function save() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
