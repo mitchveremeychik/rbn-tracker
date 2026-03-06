@@ -1034,6 +1034,16 @@ function renderDealDetail() {
       </div>
 
     </div>`;
+  autoResizeFieldCards();
+}
+
+function autoResizeFieldCards() {
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.field-card textarea.field-input').forEach(ta => {
+      ta.style.height = 'auto';
+      ta.style.height = ta.scrollHeight + 'px';
+    });
+  });
 }
 
 function fieldCard(label, val, idx, field, mono=false) {
@@ -1301,6 +1311,7 @@ function renderAssetDetail(idx) {
       </div>
 
     </div>`;
+  autoResizeFieldCards();
 }
 
 function updateAssetField(idx, field, val) {
